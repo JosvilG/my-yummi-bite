@@ -1,4 +1,4 @@
-# WhatToday 🍳
+# MyYummiBite 🍳
 
 Una aplicación móvil moderna para descubrir recetas aleatorias, guardar tus favoritas y organizarlas por categorías.
 
@@ -26,8 +26,8 @@ Una aplicación móvil moderna para descubrir recetas aleatorias, guardar tus fa
 
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/JosvilG/WhatToday.git
-   cd WhatToday
+   git clone https://github.com/JosvilG/MyYummiBite.git
+   cd MyYummiBite
    ```
 
 2. **Instalar dependencias**
@@ -81,7 +81,7 @@ Una aplicación móvil moderna para descubrir recetas aleatorias, guardar tus fa
 ### Estructura del Proyecto
 
 ```
-WhatToday/
+MyYummiBite/
 ├── src/
 │   ├── app/
 │   │   ├── config/          # Firebase y otros providers globales
@@ -345,7 +345,7 @@ Si estás migrando desde la versión 1.x:
 
 1. **Backup del proyecto**
    ```bash
-   cp -r . ../WhatToday-backup
+   cp -r . ../MyYummiBite-backup
    ```
 
 2. **Limpiar instalación antigua**
