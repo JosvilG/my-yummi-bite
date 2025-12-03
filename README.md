@@ -104,6 +104,17 @@ WhatToday/
 └── package.json
 ```
 
+### Alias de imports
+
+Para evitar rutas relativas largas configuramos:
+
+| Alias       | Apunta a        | Uso                                  |
+|-------------|-----------------|--------------------------------------|
+| `@/*`       | `src/*`         | Features, providers, componentes...  |
+| `@assets/*` | `assets/*`      | Imágenes y fuentes globales          |
+
+Estos alias funcionan en Metro/Babel y TypeScript (`tsconfig.json`), así que puedes importar, por ejemplo, `@/shared/icons/add` o `@assets/user.jpg` sin preocuparte por la profundidad del archivo.
+
 ## 🔧 Configuración de Firebase
 
 1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/)
@@ -389,10 +400,9 @@ import { auth, db } from './src/app/config/firebase';
 
 ## 📚 Documentación Adicional
 
-- [Guía de Migración Completa](./MIGRATION_GUIDE.md) - Detalles técnicos de la migración
 - [Changelog](./CHANGELOG.md) - Historial de cambios
 
 ---
 
-**Versión actual:** 2.0.0  
+**Versión actual:** 1.0.0  
 **Última actualización:** Diciembre 2025
