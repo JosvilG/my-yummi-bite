@@ -233,7 +233,7 @@ Este proyecto está bajo la licencia MIT. Ver archivo `LICENSE` para más detall
 - [x] Actualización a Expo SDK 52
 - [x] Migración a Firebase v10
 - [x] React Navigation v6
-- [ ] Implementar TypeScript
+- [x] Implementar TypeScript
 - [ ] Añadir tests unitarios
 - [ ] Soporte offline
 - [ ] Compartir recetas en redes sociales
