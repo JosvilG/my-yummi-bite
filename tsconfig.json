@@ -3,9 +3,17 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-native",
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    "lib": ["ES2020"],
     "paths": {
       "@/*": ["./src/*"],
       "@assets/*": ["./assets/*"]
     }
-  }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "exclude": ["node_modules", "babel.config.js", "metro.config.js", "jest.config.js"]
 }
