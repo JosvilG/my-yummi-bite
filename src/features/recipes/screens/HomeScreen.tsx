@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Swiper from 'react-native-deck-swiper';
 import { observer } from 'mobx-react-lite';
 import { useRecipeStore } from '@/app/providers/RecipeProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -12,15 +13,17 @@ import { CUISINES } from '@/constants/recipe';
 import { COLORS, FONTS } from '@/constants/theme';
 import type { RecipeSummary } from '../services/spoonacularService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const HomeScreen: React.FC = observer(() => {
   const recipeStore = useRecipeStore();
   const { user } = useAuth();
-  const recipe: RecipeSummary | undefined = recipeStore.randomRecipe?.[0];
+  const swiperRef = useRef<Swiper<RecipeSummary>>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const recipes = recipeStore.randomRecipe ?? [];
 
   useEffect(() => {
-    recipeStore.loadRandomRecipe();
+    recipeStore.loadRandomRecipe(5);
   }, [recipeStore]);
 
   const handleToggleFilter = (cuisine: string) => {
@@ -29,49 +32,133 @@ const HomeScreen: React.FC = observer(() => {
     } else {
       recipeStore.addFilter(cuisine);
     }
-    recipeStore.loadRandomRecipe();
+    recipeStore.loadRandomRecipe(5);
+    setCurrentIndex(0);
+  };
+
+  const handleSwiped = (cardIndex: number) => {
+    setCurrentIndex(cardIndex + 1);
+  };
+
+  const handleSwipedLeft = (cardIndex: number) => {
+    handleSwiped(cardIndex);
+  };
+
+  const handleSwipedRight = async (cardIndex: number) => {
+    const recipe = recipes[cardIndex];
+    if (!user?.uid || !recipe) return;
+    await saveFavoriteRecipe(user.uid, recipe.id, recipe.image ?? '');
+    handleSwiped(cardIndex);
+  };
+
+  const handleSwipedAll = () => {
+    recipeStore.loadRandomRecipe(5);
+    setCurrentIndex(0);
   };
 
   const handleSkipRecipe = () => {
-    recipeStore.loadRandomRecipe();
+    swiperRef.current?.swipeLeft();
   };
 
-  const handleSaveRecipe = async () => {
-    if (!user?.uid || !recipe) return;
-    await saveFavoriteRecipe(user.uid, recipe.id, recipe.image ?? '');
-    recipeStore.loadRandomRecipe();
+  const handleSaveRecipe = () => {
+    swiperRef.current?.swipeRight();
   };
 
-  const isLoading = recipeStore.loading || !recipe;
+  const renderCard = (recipe: RecipeSummary, index: number) => {
+    return <RecipeCard recipe={recipe} isActive={index === currentIndex} />;
+  };
+
+  const isLoading = recipeStore.loading || recipes.length === 0;
 
   return (
     <View style={styles.container}>
       <HomeBackground style={styles.background} />
       <View style={styles.content}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          {CUISINES.map(cuisine => (
-            <FilterPill
-              key={cuisine}
-              label={cuisine}
-              selected={recipeStore.filters.includes(cuisine)}
-              onToggle={handleToggleFilter}
-            />
-          ))}
-        </ScrollView>
+        <View style={styles.filtersContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+            {CUISINES.map(cuisine => (
+              <FilterPill
+                key={cuisine}
+                label={cuisine}
+                selected={recipeStore.filters.includes(cuisine)}
+                onToggle={handleToggleFilter}
+              />
+            ))}
+          </ScrollView>
+        </View>
 
         {isLoading ? (
           <View style={styles.loader}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loaderText}>Discovering a new dish...</Text>
+            <Text style={styles.loaderText}>Discovering new dishes...</Text>
           </View>
         ) : (
-          <RecipeCard recipe={recipe} />
+          <View style={styles.swiperContainer}>
+            <Swiper
+              ref={swiperRef}
+              cards={recipes}
+              renderCard={renderCard}
+              onSwipedLeft={handleSwipedLeft}
+              onSwipedRight={handleSwipedRight}
+              onSwipedAll={handleSwipedAll}
+              cardIndex={0}
+              backgroundColor="transparent"
+              stackSize={3}
+              stackScale={8}
+              stackSeparation={14}
+              animateCardOpacity
+              animateOverlayLabelsOpacity
+              disableTopSwipe
+              disableBottomSwipe
+              cardVerticalMargin={0}
+              cardHorizontalMargin={20}
+              marginTop={0}
+              overlayLabels={{
+                left: {
+                  title: 'SKIP',
+                  style: {
+                    label: {
+                      backgroundColor: COLORS.error,
+                      color: COLORS.background,
+                      fontSize: 24,
+                      fontFamily: FONTS.bold,
+                      borderRadius: 100,
+                      padding: 10,
+                    },
+                    wrapper: {
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
+                      justifyContent: 'flex-start',
+                      marginTop: 20,
+                      paddingRight: 20,
+                    },
+                  },
+                },
+                right: {
+                  title: 'SAVE',
+                  style: {
+                    label: {
+                      backgroundColor: COLORS.success,
+                      color: COLORS.background,
+                      fontSize: 24,
+                      fontFamily: FONTS.bold,
+                      borderRadius: 100,
+                      padding: 10,
+                    },
+                    wrapper: {
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      justifyContent: 'flex-start',
+                      marginTop: 20,
+                      marginLeft: 20,
+                    },
+                  },
+                },
+              }}
+              containerStyle={styles.swiper}
+            />
+          </View>
         )}
-      </View>
-
-      <View style={styles.actions}>
-        <VerifyButton variant="reject" onPress={handleSkipRecipe} />
-        <VerifyButton variant="accept" size={72} onPress={handleSaveRecipe} />
       </View>
     </View>
   );
@@ -88,11 +175,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    alignItems: 'center',
     paddingTop: 40,
+  },
+  filtersContainer: {
+    height: 50,
   },
   filters: {
     paddingHorizontal: 16,
+    alignItems: 'center',
   },
   loader: {
     flex: 1,
@@ -104,10 +194,16 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     color: COLORS.textLight,
   },
+  swiperContainer: {
+    flex: 1,
+  },
+  swiper: {
+    backgroundColor: 'transparent',
+  },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingBottom: 32,
+    paddingBottom: 10,
     paddingHorizontal: 32,
   },
 });

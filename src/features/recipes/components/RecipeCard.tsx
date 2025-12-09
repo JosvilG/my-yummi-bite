@@ -1,13 +1,33 @@
-import React from 'react';
-import { ImageBackground, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Dimensions, ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { COLORS, FONTS } from '@/constants/theme';
 import type { RecipeSummary } from '../services/spoonacularService';
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CARD_MAX_HEIGHT = SCREEN_HEIGHT * 0.75;
+
 interface Props {
   recipe?: RecipeSummary;
+  isActive?: boolean;
 }
 
-const RecipeCard: React.FC<Props> = ({ recipe }) => {
+const RecipeCard: React.FC<Props> = ({ recipe, isActive = false }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (recipe && isActive) {
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else if (recipe) {
+      // Cards in the background start visible
+      fadeAnim.setValue(1);
+    }
+  }, [recipe, isActive, fadeAnim]);
+
   if (!recipe) {
     return null;
   }
@@ -16,7 +36,7 @@ const RecipeCard: React.FC<Props> = ({ recipe }) => {
   const imageSource = recipe.image || `https://spoonacular.com/recipeImages/${recipe.id}-636x393.jpg`;
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <ImageBackground source={{ uri: imageSource }} style={styles.card} imageStyle={styles.image}>
         <View style={styles.overlay}>
           <Text numberOfLines={2} style={styles.title}>
@@ -25,19 +45,22 @@ const RecipeCard: React.FC<Props> = ({ recipe }) => {
           <Text style={styles.subtitle}>{calories} kcal</Text>
         </View>
       </ImageBackground>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: '90%',
-    aspectRatio: 3/ 4.5,
+    flex: 1,
     borderRadius: 24,
     overflow: 'hidden',
     elevation: 4,
     backgroundColor: COLORS.primary,
-    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    maxHeight: CARD_MAX_HEIGHT,
   },
   card: {
     flex: 1,
