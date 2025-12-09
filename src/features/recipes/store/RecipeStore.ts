@@ -31,11 +31,11 @@ class RecipeStore {
     makeAutoObservable(this);
   }
 
-  async loadRandomRecipe() {
+  async loadRandomRecipe(count = 5) {
     this.loading = true;
     this.error = null;
 
-    const result = await fetchRandomRecipes(this.filters, 1);
+    const result = await fetchRandomRecipes(this.filters, count);
 
     runInAction(() => {
       if (result.success) {
