@@ -1,6 +1,6 @@
 {
   "name": "myyummibite",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -29,28 +29,35 @@
     "mobx-react-lite": "^4.0.7",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-native": "0.76.5",
+    "react-native": "0.76.9",
+    "react-native-deck-swiper": "^2.0.19",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-modal-selector": "^2.1.2",
     "react-native-reanimated": "~3.16.1",
     "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.1.0",
+    "react-native-screens": "~4.4.0",
     "react-native-svg": "15.8.0",
     "react-native-web": "~0.19.13"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@eslint/js": "^9.15.0",
+    "@types/node": "^22.7.4",
     "@types/react": "~18.3.12",
     "@types/react-dom": "^18.3.0",
-    "@types/node": "^22.7.4",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.15.0",
-    "eslint-config-expo": "^7.1.2",
+    "eslint-config-expo": "~8.0.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "prettier": "^3.3.3",
     "typescript": "~5.3.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "node-fetch": ">=2.6.7",
+      "undici": ">=6.21.2"
+    }
   },
   "private": true
 }

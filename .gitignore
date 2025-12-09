@@ -10,6 +10,7 @@ npm-debug.*
 web-build/
 *.env
 *.env.*
+pnpm-lock.yaml
 
 # macOS
 .DS_Store
