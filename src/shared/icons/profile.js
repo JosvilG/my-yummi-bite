@@ -1,7 +1,6 @@
 import * as React from "react"
 import Svg, { G, Path, Defs, ClipPath } from "react-native-svg"
 import { COLORS } from "@/constants/theme"
-/* SVGR has dropped some elements not supported by react-native-svg: filter */
 
 function ProfileIcon(props) {
     return (

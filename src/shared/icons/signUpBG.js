@@ -25,7 +25,6 @@ function SignUpBG(props) {
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-      {/* Fondo con gradiente radial grande */}
       <G>
         <Path
           d="M-50 450C50 550 150 650 300 600C450 550 420 350 380 250C340 150 200 100 100 150C0 200 -150 350 -50 450Z"
@@ -33,7 +32,6 @@ function SignUpBG(props) {
         />
       </G>
       
-      {/* Círculo grande arriba izquierda */}
       <G>
         <Circle
           cx={80}
@@ -44,7 +42,6 @@ function SignUpBG(props) {
         />
       </G>
       
-      {/* Círculo pequeño arriba derecha */}
       <G>
         <Circle
           cx={320}
@@ -55,7 +52,6 @@ function SignUpBG(props) {
         />
       </G>
       
-      {/* Círculo pequeño izquierda */}
       <G>
         <Circle
           cx={30}
@@ -66,7 +62,6 @@ function SignUpBG(props) {
         />
       </G>
       
-      {/* Círculo mediano derecha */}
       <G>
         <Circle
           cx={350}

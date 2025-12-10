@@ -8,7 +8,6 @@ import Svg, {
   Stop,
   RadialGradient,
 } from "react-native-svg"
-/* SVGR has dropped some elements not supported by react-native-svg: filter */
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;

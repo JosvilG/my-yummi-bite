@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Dimensions } from "react-native"
 import Svg, { G, Path, Defs, LinearGradient, Stop } from "react-native-svg"
-/* SVGR has dropped some elements not supported by react-native-svg: filter */
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
