@@ -5,7 +5,7 @@ import { useColors } from '@/shared/hooks/useColors';
 import LogInBackground from '@/shared/icons/loginBG';
 import type { AuthStackParamList } from '@/types/navigation';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loginUser } from '../services/authService';
+import { addBreadcrumb } from '@/lib/sentry';
+import { log } from '@/lib/logger';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,19 +33,52 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
+  useEffect(() => {
+    log.debug('LogInScreen mounted');
+    return () => {
+      log.debug('LogInScreen unmounted');
+    };
+  }, []);
+
   const handleLogIn = async () => {
     if (!email || !password) {
+      log.warn('Login attempt with empty fields');
       Alert.alert('Error', t('auth.fillAllFields'));
       return;
     }
+
+    log.info('User attempting login', { email });
+    addBreadcrumb({
+      message: 'User attempting login',
+      category: 'auth',
+      data: { email },
+    });
 
     setLoading(true);
     const result = await loginUser(email, password);
     setLoading(false);
 
     if (!result.success) {
+      log.warn('Login failed', { email, error: result.error });
       Alert.alert(t('common.error'), result.error ?? t('common.unknownError'));
+    } else {
+      log.info('Login successful, navigating to main app', { email });
+      addBreadcrumb({
+        message: 'User logged in successfully',
+        category: 'auth',
+        level: 'info',
+      });
     }
+  };
+
+  const handleForgotPassword = () => {
+    log.debug('User tapped forgot password');
+    // TODO: Navigate to forgot password screen
+  };
+
+  const handleNavigateToSignUp = () => {
+    log.debug('User tapped sign up link');
+    navigation.navigate('SignUp');
   };
 
   return (
@@ -92,7 +127,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
                 </Text>
               </AnimatedPressable>
 
-              <AnimatedPressable style={styles.forgotPassword} scaleValue={0.96}>
+              <AnimatedPressable style={styles.forgotPassword} scaleValue={0.96} onPress={handleForgotPassword}>
                 <Text style={[styles.forgotPasswordText, { color: '#FFFFFF' }]}>
                   {t('auth.forgotPassword')}
                 </Text>
@@ -104,7 +139,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
             <Text style={[styles.noAccountText, { color: 'rgba(255,255,255,0.8)' }]}>
               {t('auth.noAccount')}
             </Text>
-            <AnimatedPressable onPress={() => navigation.navigate('SignUp')} scaleValue={0.96}>
+            <AnimatedPressable onPress={handleNavigateToSignUp} scaleValue={0.96}>
               <Text style={[styles.registerText, { color: '#FFFFFF' }]}> {t('auth.signUp')}</Text>
             </AnimatedPressable>
           </View>

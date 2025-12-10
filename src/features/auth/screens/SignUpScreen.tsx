@@ -6,7 +6,7 @@ import { useColors } from '@/shared/hooks/useColors';
 import SignUpBG from '@/shared/icons/signUpBG';
 import type { AuthStackParamList } from '@/types/navigation';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -21,6 +21,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { registerUser } from '../services/authService';
+import { addBreadcrumb } from '@/lib/sentry';
+import { log } from '@/lib/logger';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,29 +38,59 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
+  useEffect(() => {
+    log.debug('SignUpScreen mounted');
+    return () => {
+      log.debug('SignUpScreen unmounted');
+    };
+  }, []);
+
   const handleSignUp = async () => {
     if (!userName || !fullName || !email || !password || !confirmPassword) {
+      log.warn('Sign up attempt with empty fields');
       Alert.alert(t('common.error'), t('auth.fillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
+      log.warn('Password mismatch on sign up');
       Alert.alert(t('common.error'), t('auth.passwordsNoMatch'));
       return;
     }
 
     if (password.length < 6) {
+      log.warn('Password too short on sign up');
       Alert.alert(t('common.error'), t('auth.passwordMinLength'));
       return;
     }
+
+    log.info('User attempting registration', { email, userName });
+    addBreadcrumb({
+      message: 'User attempting registration',
+      category: 'auth',
+      data: { email, userName },
+    });
 
     setLoading(true);
     const result = await registerUser(email, password, userName, fullName);
     setLoading(false);
 
     if (!result.success) {
+      log.warn('Registration failed', { email, userName, error: result.error });
       Alert.alert(t('auth.registrationFailed'), result.error ?? t('common.unknownError'));
+    } else {
+      log.info('Registration successful, user created', { userId: result.user?.uid, email });
+      addBreadcrumb({
+        message: 'User registered successfully',
+        category: 'auth',
+        level: 'info',
+      });
     }
+  };
+
+  const handleGoBack = () => {
+    log.debug('User tapped back button on sign up');
+    navigation.goBack();
   };
 
   return (
@@ -75,7 +107,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <ReturnHeaderButton style={styles.returnButton} onPress={() => navigation.goBack()} />
+          <ReturnHeaderButton style={styles.returnButton} onPress={handleGoBack} />
 
           <View style={styles.container}>
             <Title color="#FFFFFF">{t('auth.signUp')}</Title>

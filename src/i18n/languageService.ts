@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { storage } from '@/app/config/firebase';
 import i18n from './index';
+import { log } from '@/lib/logger';
 
 const LANGUAGE_KEY = '@MyYummiBite:language';
 const CACHED_TRANSLATIONS_PREFIX = '@MyYummiBite:translations_';
@@ -28,16 +29,17 @@ export const getSavedLanguage = async (): Promise<string | null> => {
   try {
     return await AsyncStorage.getItem(LANGUAGE_KEY);
   } catch (error) {
-    console.error('Error reading saved language:', error);
+    log.error('Error reading saved language', error);
     return null;
   }
 };
 
 export const saveLanguagePreference = async (languageCode: string): Promise<void> => {
   try {
+    log.info('Saving language preference', { languageCode });
     await AsyncStorage.setItem(LANGUAGE_KEY, languageCode);
   } catch (error) {
-    console.error('Error saving language preference:', error);
+    log.error('Error saving language preference', error, { languageCode });
   }
 };
 
@@ -67,6 +69,7 @@ export const cacheTranslations = async (languageCode: string, translations: Reco
 
 export const downloadTranslations = async (languageCode: string): Promise<Record<string, unknown>> => {
   try {
+    log.info('Downloading translations', { languageCode });
     const translationRef = ref(storage, `translations/${languageCode}.json`);
     const downloadUrl = await getDownloadURL(translationRef);
     
@@ -76,9 +79,10 @@ export const downloadTranslations = async (languageCode: string): Promise<Record
     }
     
     const translations = await response.json();
+    log.info('Translations downloaded successfully', { languageCode });
     return translations;
   } catch (error) {
-    console.error(`Error downloading ${languageCode} translations:`, error);
+    log.error('Error downloading translations', error, { languageCode });
     throw error;
   }
 };
@@ -108,6 +112,7 @@ export const changeLanguageWithDownload = async (
   onProgress?: (status: 'loading' | 'success' | 'error') => void
 ): Promise<boolean> => {
   try {
+    log.info('Changing language', { languageCode });
     onProgress?.('loading');
 
     const translations = await loadTranslations(languageCode);
@@ -122,10 +127,11 @@ export const changeLanguageWithDownload = async (
 
     await saveLanguagePreference(languageCode);
 
+    log.info('Language changed successfully', { languageCode });
     onProgress?.('success');
     return true;
   } catch (error) {
-    console.error('Error changing language:', error);
+    log.error('Error changing language', error, { languageCode });
     onProgress?.('error');
     
     await i18n.changeLanguage('en');

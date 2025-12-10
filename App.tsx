@@ -6,6 +6,10 @@ import AppProviders from './src/app/providers/AppProviders';
 import AppNavigator from './src/app/navigation/AppNavigator';
 import SplashScreen from './src/shared/components/SplashScreen';
 
+// Initialize Sentry first for error tracking
+import { initSentry } from './src/lib/sentry';
+initSentry();
+
 // Initialize i18n
 import './src/i18n';
 import { initializeLanguage } from './src/i18n/languageService';

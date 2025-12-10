@@ -14,6 +14,7 @@ import { useColors } from '@/shared/hooks/useColors';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import type { RecipeSummary } from '../services/spoonacularService';
 import type { MainStackParamList } from '@/types/navigation';
+import { log } from '@/lib/logger';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.75;
@@ -48,6 +49,7 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave }) => {
   const summary = recipe.summary?.replace(/<[^>]*>/g, '').slice(0, 120) + '...';
 
   const handleInfoPress = () => {
+    log.info('Navigation to recipe details', { recipeId: recipe.id, title: recipe.title });
     navigation.navigate('Info', { id: recipe.id });
   };
 

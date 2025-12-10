@@ -4,6 +4,7 @@ import {
   fetchRecipeInfo,
   type RecipeSummary,
 } from '../services/spoonacularService';
+import { log } from '@/lib/logger';
 
 interface FavoriteRecipeEntry {
   id: number;
@@ -33,6 +34,7 @@ class RecipeStore {
   }
 
   async loadRandomRecipe(count = 5) {
+    log.debug('RecipeStore: Loading random recipes', { count, filters: this.filters, mealType: this.mealType });
     this.loading = true;
     this.error = null;
 
@@ -41,15 +43,18 @@ class RecipeStore {
     runInAction(() => {
       if (result.success) {
         this.randomRecipe = result.recipes ?? null;
+        log.info('RecipeStore: Random recipes loaded', { count: result.recipes?.length });
       } else {
         this.error = result.error ?? null;
         this.randomRecipe = null;
+        log.warn('RecipeStore: Failed to load random recipes', { error: result.error });
       }
       this.loading = false;
     });
   }
 
   async loadRecipeInfo(recipeId: number) {
+    log.debug('RecipeStore: Loading recipe info', { recipeId });
     this.loading = true;
     this.error = null;
 
@@ -58,9 +63,11 @@ class RecipeStore {
     runInAction(() => {
       if (result.success) {
         this.recipeInfo = result.recipe ?? null;
+        log.info('RecipeStore: Recipe info loaded', { recipeId, title: result.recipe?.title });
       } else {
         this.error = result.error ?? null;
         this.recipeInfo = null;
+        log.warn('RecipeStore: Failed to load recipe info', { recipeId, error: result.error });
       }
       this.loading = false;
     });
@@ -84,15 +91,18 @@ class RecipeStore {
   addFilter(filter: string) {
     if (!this.filters.includes(filter)) {
       this.filters.push(filter);
+      log.debug('RecipeStore: Filter added', { filter });
     }
   }
 
   removeFilter(filter: string) {
     this.filters = this.filters.filter(item => item !== filter);
+    log.debug('RecipeStore: Filter removed', { filter });
   }
 
   setMealType(mealType: string | null) {
     this.mealType = mealType;
+    log.debug('RecipeStore: Meal type changed', { mealType });
   }
 
   addCategory(category: string) {
@@ -128,6 +138,7 @@ class RecipeStore {
   }
 
   reset() {
+    log.info('RecipeStore: Resetting store');
     this.randomRecipe = null;
     this.favRecipes = [];
     this.filters = [];

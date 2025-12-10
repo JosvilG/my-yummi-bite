@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useColors } from '@/shared/hooks/useColors';
+import { log } from '@/lib/logger';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -89,6 +90,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
             });
 
             if (!isFocused && !event.defaultPrevented) {
+              log.info('Tab navigation', { from: state.routes[state.index].name, to: route.name });
               navigation.navigate(route.name);
             }
           };

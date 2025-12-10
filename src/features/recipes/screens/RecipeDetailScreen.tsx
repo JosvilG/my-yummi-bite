@@ -19,6 +19,8 @@ import { useFavoriteRecipes } from '../hooks/useFavoriteRecipes';
 import { FONTS } from '@/constants/theme';
 import { useColors } from '@/shared/hooks/useColors';
 import type { MainStackParamList } from '@/types/navigation';
+import { log } from '@/lib/logger';
+import { captureException } from '@/lib/sentry';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -42,21 +44,50 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
   const isFavorite = !!favoriteDoc;
 
   useEffect(() => {
-    if (!id) return;
+    log.debug('RecipeDetailScreen mounted', { recipeId: id });
+    
+    if (!id) {
+      log.warn('RecipeDetailScreen opened without recipe ID');
+      return;
+    }
 
     const loadRecipe = async () => {
-      setLoading(true);
-      const result = await fetchRecipeInfo(id);
-      if (result.success && result.recipe) {
-        setRecipe(result.recipe);
-        setError(null);
-      } else {
-        setError(result.error ?? 'Unknown error');
+      try {
+        log.info('Loading recipe details', { recipeId: id });
+        setLoading(true);
+        const result = await fetchRecipeInfo(id);
+        if (result.success && result.recipe) {
+          setRecipe(result.recipe);
+          setError(null);
+          log.info('Recipe loaded successfully', { 
+            recipeId: id, 
+            title: result.recipe.title,
+            readyInMinutes: result.recipe.readyInMinutes 
+          });
+        } else {
+          log.error('Failed to load recipe', result.error, { recipeId: id });
+          setError(result.error ?? 'Unknown error');
+          captureException(new Error(result.error || 'Unknown error'), {
+            operation: 'fetchRecipeInfo',
+            recipeId: id,
+          });
+        }
+        setLoading(false);
+      } catch (error) {
+        log.error('Error loading recipe', error, { recipeId: id });
+        captureException(error as Error, {
+          operation: 'loadRecipe',
+          recipeId: id,
+        });
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadRecipe();
+    
+    return () => {
+      log.debug('RecipeDetailScreen unmounted', { recipeId: id });
+    };
   }, [id]);
 
   const toggleIngredientCheck = (ingredientId: number) => {
@@ -64,8 +95,10 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
       const newSet = new Set(prev);
       if (newSet.has(ingredientId)) {
         newSet.delete(ingredientId);
+        log.debug('Ingredient unchecked', { ingredientId, recipeId: id });
       } else {
         newSet.add(ingredientId);
+        log.debug('Ingredient checked', { ingredientId, recipeId: id });
       }
       return newSet;
     });
@@ -75,10 +108,27 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
     if (!recipe) return;
     
     if (isFavorite && favoriteDoc?.docId) {
+      log.info('Removing recipe from favorites', { recipeId: id, title: recipe.title });
       await removeFavorite(favoriteDoc.docId);
     } else if (recipe.image) {
+      log.info('Adding recipe to favorites', { recipeId: id, title: recipe.title });
       await addFavorite(id, recipe.image);
     }
+  };
+
+  const handleTabChange = (tab: 'ingredients' | 'instructions') => {
+    log.debug('Tab changed', { tab, recipeId: id });
+    setActiveTab(tab);
+  };
+
+  const handleGoBack = () => {
+    log.debug('User tapped back button', { recipeId: id });
+    navigation.goBack();
+  };
+
+  const handleShare = () => {
+    log.debug('User tapped share button', { recipeId: id, title: recipe?.title });
+    // TODO: Implement share functionality
   };
 
   const getDifficultyText = (readyInMinutes: number) => {
@@ -112,7 +162,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
   return (
     <View style={[styles.container, { backgroundColor: colors.tertiary }]}>
       <View style={[styles.header, { backgroundColor: colors.tertiary }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
+        <Pressable onPress={handleGoBack} style={styles.headerButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t('recipe.details')}</Text>
@@ -124,7 +174,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
               color={isFavorite ? colors.primary : colors.text} 
             />
           </Pressable>
-          <Pressable style={styles.headerButton}>
+          <Pressable onPress={handleShare} style={styles.headerButton}>
             <Ionicons name="share-outline" size={24} color={colors.text} />
           </Pressable>
         </View>
@@ -166,7 +216,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
                 styles.tab, 
                 { backgroundColor: activeTab === 'ingredients' ? colors.background : 'transparent' }
               ]}
-              onPress={() => setActiveTab('ingredients')}
+              onPress={() => handleTabChange('ingredients')}
             >
               <Text style={[
                 styles.tabText, 
@@ -180,7 +230,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
                 styles.tab, 
                 { backgroundColor: activeTab === 'instructions' ? colors.background : 'transparent' }
               ]}
-              onPress={() => setActiveTab('instructions')}
+              onPress={() => handleTabChange('instructions')}
             >
               <Text style={[
                 styles.tabText, 

@@ -28,6 +28,7 @@ import { getCurrentLanguageInfo } from '@/i18n/languageService';
 import { logoutUser } from '@/features/auth/services/authService';
 import { FONTS } from '@/constants/theme';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
+import { log } from '@/lib/logger';
 import type { FavoriteRecipeDoc } from '@/features/recipes/services/favoriteService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -54,6 +55,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleRecipePress = (recipeId: number) => {
+    log.info('Navigation to recipe details', { recipeId, from: 'ProfileScreen' });
     navigation.navigate('Info', { id: recipeId });
   };
 

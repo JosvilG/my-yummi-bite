@@ -32,6 +32,7 @@ import { updateRecipeCategory } from '../services/favoriteService';
 import type { FavoriteRecipeDoc } from '../services/favoriteService';
 import type { UserCategory } from '../services/categoryService';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
+import { log } from '@/lib/logger';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -136,6 +137,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         return newSet;
       });
     } else {
+      log.info('Navigation to recipe details', { recipeId: recipe.id, from: 'SaveScreen' });
       navigation.navigate('Info', { id: recipe.id, rId: recipe.docId });
     }
   }, [selectionMode, navigation]);

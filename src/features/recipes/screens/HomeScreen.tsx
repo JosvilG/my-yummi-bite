@@ -14,6 +14,8 @@ import { MEAL_TYPES } from '@/constants/recipe';
 import { FONTS } from '@/constants/theme';
 import { useColors } from '@/shared/hooks/useColors';
 import type { RecipeSummary } from '../services/spoonacularService';
+import { addBreadcrumb, captureException } from '@/lib/sentry';
+import { log } from '@/lib/logger';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,10 +61,13 @@ const HomeScreen: React.FC = observer(() => {
   const recipes = recipeStore.randomRecipe ?? [];
 
   useEffect(() => {
+    log.debug('HomeScreen mounted, loading recipes');
     recipeStore.loadRandomRecipe(15);
   }, [recipeStore]);
 
   const handleSelectMealType = (mealType: string) => {
+    log.debug('Meal type filter changed', { mealType, previousType: selectedMealType });
+    
     if (selectedMealType === mealType) {
       setSelectedMealType(null);
       recipeStore.setMealType(null);
@@ -79,10 +84,29 @@ const HomeScreen: React.FC = observer(() => {
   const handleSwipedRight = useCallback(async (cardIndex: number) => {
     const recipe = recipes[cardIndex];
     if (!user?.uid || !recipe) return;
-    await saveFavoriteRecipe(user.uid, recipe.id, recipe.image ?? '', recipe.cuisines);
+    
+    try {
+      addBreadcrumb({
+        message: 'User saved recipe as favorite',
+        category: 'recipe',
+        data: {
+          recipeId: recipe.id,
+          recipeName: recipe.title,
+        },
+      });
+      
+      await saveFavoriteRecipe(user.uid, recipe.id, recipe.image ?? '', recipe.cuisines);
+    } catch (error) {
+      captureException(error as Error, {
+        operation: 'handleSwipedRight',
+        recipeId: recipe.id,
+        userId: user.uid,
+      });
+    }
   }, [recipes, user?.uid]);
 
   const handleSwipedAll = useCallback(() => {
+    log.info('All recipes swiped, loading more');
     recipeStore.loadRandomRecipe(15);
   }, [recipeStore]);
 
