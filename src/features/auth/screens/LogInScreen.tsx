@@ -1,24 +1,24 @@
+import { FONTS } from '@/constants/theme';
+import AnimatedPressable from '@/shared/components/AnimatedPressable';
+import Title from '@/shared/components/Title';
+import { useColors } from '@/shared/hooks/useColors';
+import LogInBackground from '@/shared/icons/loginBG';
+import type { AuthStackParamList } from '@/types/navigation';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useTranslation } from 'react-i18next';
-import Title from '@/shared/components/Title';
-import AnimatedPressable from '@/shared/components/AnimatedPressable';
-import LogInBackground from '@/shared/icons/loginBG';
 import { loginUser } from '../services/authService';
-import { FONTS } from '@/constants/theme';
-import { useColors } from '@/shared/hooks/useColors';
-import type { AuthStackParamList } from '@/types/navigation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -49,7 +49,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
   return (
     <View style={[styles.wrapper, { backgroundColor: colors.primary }]}>
       <LogInBackground style={styles.background} />
-      
+
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
           style={styles.keyboardView}
@@ -57,7 +57,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
         >
           <View style={styles.content}>
             <View style={styles.titleContainer}>
-              <Title color={colors.text}>My Yummi Bite</Title>
+              <Title color={'#FFFFFF'}>My Yummi Bite</Title>
             </View>
 
             <View style={styles.formContainer}>
@@ -80,9 +80,9 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
                 secureTextEntry
                 autoCapitalize="none"
               />
-              
+
               <AnimatedPressable
-                style={[styles.confirmBtn, { backgroundColor: colors.text }]}
+                style={[styles.confirmBtn, { backgroundColor: '#FFFFFF' }]}
                 onPress={handleLogIn}
                 disabled={loading}
                 scaleValue={0.96}
@@ -93,13 +93,17 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
               </AnimatedPressable>
 
               <AnimatedPressable style={styles.forgotPassword} scaleValue={0.96}>
-                <Text style={[styles.forgotPasswordText, { color: colors.text }]}>{t('auth.forgotPassword')}</Text>
+                <Text style={[styles.forgotPasswordText, { color: '#FFFFFF' }]}>
+                  {t('auth.forgotPassword')}
+                </Text>
               </AnimatedPressable>
             </View>
           </View>
 
           <View style={styles.footer}>
-            <Text style={[styles.noAccountText, { color: 'rgba(255,255,255,0.8)' }]}>{t('auth.noAccount')}</Text>
+            <Text style={[styles.noAccountText, { color: 'rgba(255,255,255,0.8)' }]}>
+              {t('auth.noAccount')}
+            </Text>
             <AnimatedPressable onPress={() => navigation.navigate('SignUp')} scaleValue={0.96}>
               <Text style={[styles.registerText, { color: '#FFFFFF' }]}> {t('auth.signUp')}</Text>
             </AnimatedPressable>
