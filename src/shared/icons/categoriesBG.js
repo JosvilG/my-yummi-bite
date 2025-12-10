@@ -32,8 +32,8 @@ function categoriesBG(props) {
           y2={332.301}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#F23838" />
-          <Stop offset={1} stopColor="#FCB13A" />
+          <Stop stopColor="#FF8A9B" />
+          <Stop offset={1} stopColor="#FFD4D4" />
         </LinearGradient>
       </Defs>
     </Svg>

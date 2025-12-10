@@ -13,7 +13,7 @@ function ReturnIcon(props) {
     >
       <Path
         d="M10.167 2L2 10.167l8.167 8.166M2 10.167h18.667"
-        stroke="#FC633A"
+        stroke="#FF8A9B"
         strokeWidth={2.333}
         strokeLinecap="round"
         strokeLinejoin="round"

@@ -31,8 +31,8 @@ function InfoDetalladaBG(props) {
           y2={451.767}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#FCB13A" />
-          <Stop offset={0.707} stopColor="#FC633A" />
+          <Stop stopColor="#FFD4D4" />
+          <Stop offset={0.707} stopColor="#FF8A9B" />
         </LinearGradient>
       </Defs>
     </Svg>

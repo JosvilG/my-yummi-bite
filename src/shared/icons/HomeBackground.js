@@ -28,8 +28,8 @@ function HomeBackground(props) {
           gradientUnits="userSpaceOnUse"
           gradientTransform="matrix(-366.59935 315.46993 -328.37249 -381.59307 369.5 72.481)"
         >
-          <Stop stopColor="#FFBD00" />
-          <Stop offset={1} stopColor="#F23838" />
+          <Stop stopColor="#FFD4D4" />
+          <Stop offset={1} stopColor="#FF8A9B" />
         </RadialGradient>
       </Defs>
     </Svg>

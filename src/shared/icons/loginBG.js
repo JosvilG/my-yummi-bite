@@ -11,13 +11,15 @@ import Svg, {
 /* SVGR has dropped some elements not supported by react-native-svg: filter */
 
 const screenWidth = Dimensions.get('window').width;
+const screenHeight = Dimensions.get('window').height;
 
 function SvgComponent(props) {
   return (
     <Svg
       width={screenWidth}
-      height={590}
-      viewBox="0 0 375 590"
+      height={screenHeight}
+      viewBox="0 0 375 812"
+      preserveAspectRatio="xMidYMid slice"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       {...props}
@@ -61,10 +63,10 @@ function SvgComponent(props) {
           y2={143.747}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#F5C73B" />
-          <Stop offset={0.385} stopColor="#E78440" />
-          <Stop offset={0.698} stopColor="#FC633A" />
-          <Stop offset={1} stopColor="#F23838" />
+          <Stop stopColor="#FFD4D4" />
+          <Stop offset={0.385} stopColor="#FFB5C0" />
+          <Stop offset={0.698} stopColor="#FF8A9B" />
+          <Stop offset={1} stopColor="#FF7A8A" />
         </LinearGradient>
         <LinearGradient
           id="prefix__paint2_linear"
@@ -74,10 +76,10 @@ function SvgComponent(props) {
           y2={44.714}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#F5C73B" />
-          <Stop offset={0.385} stopColor="#E78440" />
-          <Stop offset={0.698} stopColor="#FC633A" />
-          <Stop offset={1} stopColor="#F23838" />
+          <Stop stopColor="#FFD4D4" />
+          <Stop offset={0.385} stopColor="#FFB5C0" />
+          <Stop offset={0.698} stopColor="#FF8A9B" />
+          <Stop offset={1} stopColor="#FF7A8A" />
         </LinearGradient>
         <LinearGradient
           id="prefix__paint3_linear"
@@ -87,10 +89,10 @@ function SvgComponent(props) {
           y2={116.063}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#F5C73B" />
-          <Stop offset={0.385} stopColor="#E78440" />
-          <Stop offset={0.698} stopColor="#FC633A" />
-          <Stop offset={1} stopColor="#F23838" />
+          <Stop stopColor="#FFD4D4" />
+          <Stop offset={0.385} stopColor="#FFB5C0" />
+          <Stop offset={0.698} stopColor="#FF8A9B" />
+          <Stop offset={1} stopColor="#FF7A8A" />
         </LinearGradient>
         <LinearGradient
           id="prefix__paint4_linear"
@@ -100,10 +102,10 @@ function SvgComponent(props) {
           y2={203.013}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#F5C73B" />
-          <Stop offset={0.385} stopColor="#E78440" />
-          <Stop offset={0.698} stopColor="#FC633A" />
-          <Stop offset={1} stopColor="#F23838" />
+          <Stop stopColor="#FFD4D4" />
+          <Stop offset={0.385} stopColor="#FFB5C0" />
+          <Stop offset={0.698} stopColor="#FF8A9B" />
+          <Stop offset={1} stopColor="#FF7A8A" />
         </LinearGradient>
         <RadialGradient
           id="prefix__paint0_radial"
@@ -113,11 +115,11 @@ function SvgComponent(props) {
           gradientUnits="userSpaceOnUse"
           gradientTransform="matrix(-350.6405 163.65539 -247.12026 -529.4685 330.517 243.581)"
         >
-          <Stop stopColor="#F5C73B" />
-          <Stop offset={0.255} stopColor="#FCB13A" />
-          <Stop offset={0.505} stopColor="#E68440" />
-          <Stop offset={0.76} stopColor="#FC633A" />
-          <Stop offset={1} stopColor="#F23838" />
+          <Stop stopColor="#FFD4D4" />
+          <Stop offset={0.255} stopColor="#FFCAB8" />
+          <Stop offset={0.505} stopColor="#FFB5C0" />
+          <Stop offset={0.76} stopColor="#FF8A9B" />
+          <Stop offset={1} stopColor="#FF7A8A" />
         </RadialGradient>
       </Defs>
     </Svg>

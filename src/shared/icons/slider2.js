@@ -13,9 +13,9 @@ function Slider2(props) {
       {...props}
     >
         <Rect width={45} height={20} rx={10} fill="#fff" />
-        <Circle opacity={0.5} cx={11.5} cy={10.5} r={3.5} fill="#FC633A" />
-        <Circle cx={22.5} cy={10.5} r={3.5} fill="#FC633A" />
-        <Circle opacity={0.5} cx={33.5} cy={10.5} r={3.5} fill="#FC633A" />
+        <Circle opacity={0.5} cx={11.5} cy={10.5} r={3.5} fill="#FF8A9B" />
+        <Circle cx={22.5} cy={10.5} r={3.5} fill="#FF8A9B" />
+        <Circle opacity={0.5} cx={33.5} cy={10.5} r={3.5} fill="#FF8A9B" />
       
     </Svg>
   )
