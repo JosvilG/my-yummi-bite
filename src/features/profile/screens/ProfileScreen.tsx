@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { useFavoriteRecipes } from '@/features/recipes/hooks/useFavoriteRecipes';
 import ProfileHeader from '../components/ProfileHeader';
 import FavoriteRecipeCard from '../components/FavoriteRecipeCard';
+import FavoriteGridSkeleton from '@/shared/components/FavoriteGridSkeleton';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { COLORS } from '@/constants/theme';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
@@ -31,9 +32,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
     <View style={styles.container}>
       <ProfileHeader profile={profile} savedCount={favorites.length} />
       {loading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
+        <FavoriteGridSkeleton count={9} />
       ) : (
         <FlatList
           data={favorites}
@@ -55,11 +54,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   grid: {
     paddingBottom: 32,

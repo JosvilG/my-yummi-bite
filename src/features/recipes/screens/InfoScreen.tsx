@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Dimensions,
   ScrollView,
@@ -12,6 +11,7 @@ import ModalSelector from 'react-native-modal-selector';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ReturnHeaderButton from '@/shared/components/ReturnHeaderButton';
+import RecipeDetailSkeleton from '@/shared/components/RecipeDetailSkeleton';
 import InfoDetalladaBG from '@/shared/icons/infoDetalladaBG';
 import Ingredients from '../components/detail/Ingredients';
 import Directions from '../components/detail/Directions';
@@ -82,8 +82,9 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={styles.container}>
+        <ReturnHeaderButton style={styles.returnButton} onPress={() => navigation.goBack()} />
+        <RecipeDetailSkeleton />
       </View>
     );
   }

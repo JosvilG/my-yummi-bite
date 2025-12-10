@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS } from '@/constants/theme';
 import type { UserProfile } from '../hooks/useUserProfile';
 import LanguageSelector from './LanguageSelector';
 import { getCurrentLanguageInfo } from '@/i18n/languageService';
+import { logoutUser } from '@/features/auth/services/authService';
 
 interface Props {
   profile?: UserProfile | null;
@@ -16,9 +17,34 @@ const ProfileHeader: React.FC<Props> = ({ profile, savedCount }: Props) => {
   const { t } = useTranslation();
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const currentLanguage = getCurrentLanguageInfo();
+
+  const handleLogout = () => {
+    Alert.alert(
+      t('auth.logout'),
+      t('profile.logoutConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('auth.logout'),
+          style: 'destructive',
+          onPress: async () => {
+            await logoutUser();
+          },
+        },
+      ]
+    );
+  };
   
   return (
     <View style={styles.container}>
+      {/* Logout button */}
+      <Pressable 
+        style={styles.logoutButton} 
+        onPress={handleLogout}
+      >
+        <Ionicons name="log-out-outline" size={20} color={COLORS.textLight} />
+      </Pressable>
+
       {/* Language selector button */}
       <Pressable 
         style={styles.languageButton} 
@@ -56,6 +82,14 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: 24,
+  },
+  logoutButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: COLORS.secondary,
   },
   languageButton: {
     position: 'absolute',

@@ -74,7 +74,8 @@
     "foodLover": "Food Lover",
     "selectLanguage": "Select Language",
     "languageDownloadError": "Failed to download language. Using English.",
-    "languageHint": "Languages are downloaded when selected to save space."
+    "languageHint": "Languages are downloaded when selected to save space.",
+    "logoutConfirm": "Are you sure you want to log out?"
   },
   "camera": {
     "permissionRequired": "Camera access is required to capture recipes.",

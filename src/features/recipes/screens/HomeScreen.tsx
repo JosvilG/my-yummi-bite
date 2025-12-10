@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { observer } from 'mobx-react-lite';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import FilterPill from '../components/FilterPill';
 import RecipeCard from '../components/RecipeCard';
 import VerifyButton from '../components/VerifyButton';
+import RecipeCardSkeleton from '@/shared/components/RecipeCardSkeleton';
 import HomeBackground from '@/shared/icons/HomeBackground';
 import { saveFavoriteRecipe } from '../services/favoriteService';
 import { CUISINES } from '@/constants/recipe';
@@ -91,8 +92,8 @@ const HomeScreen: React.FC = observer(() => {
 
         {isLoading ? (
           <View style={styles.loader}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loaderText}>{t('home.discoveringDishes')}</Text>
+            <RecipeCardSkeleton />
+            <Text style={styles.loaderText}>{t('home.discovering')}</Text>
           </View>
         ) : (
           <View style={styles.swiperContainer}>
