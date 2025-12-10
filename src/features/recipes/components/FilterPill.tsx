@@ -9,7 +9,6 @@ interface Props {
   onToggle: (label: string) => void;
 }
 
-// Map cuisine names to translation keys
 const getCuisineTranslationKey = (cuisine: string): string => {
   const key = cuisine.toLowerCase().replace(/\s+/g, '');
   return `filters.${key}`;
@@ -18,7 +17,6 @@ const getCuisineTranslationKey = (cuisine: string): string => {
 const FilterPill: React.FC<Props> = ({ label, selected, onToggle }: Props) => {
   const { t, i18n } = useTranslation();
   
-  // Try to get translated label, fallback to original if not found
   const translatedLabel = t(getCuisineTranslationKey(label), { defaultValue: label });
 
   return (

@@ -37,7 +37,6 @@ const ProfileHeader: React.FC<Props> = ({ profile, savedCount }: Props) => {
   
   return (
     <View style={styles.container}>
-      {/* Logout button */}
       <Pressable 
         style={styles.logoutButton} 
         onPress={handleLogout}
@@ -45,7 +44,6 @@ const ProfileHeader: React.FC<Props> = ({ profile, savedCount }: Props) => {
         <Ionicons name="log-out-outline" size={20} color={COLORS.textLight} />
       </Pressable>
 
-      {/* Language selector button */}
       <Pressable 
         style={styles.languageButton} 
         onPress={() => setShowLanguageSelector(true)}

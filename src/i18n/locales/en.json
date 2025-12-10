@@ -38,6 +38,8 @@
     "registrationFailed": "Registration Failed"
   },
   "home": {
+    "discover": "Discover",
+    "swipeToExplore": "Swipe to explore new recipes",
     "discovering": "Discovering new dishes...",
     "skip": "SKIP",
     "save": "SAVE",
@@ -47,41 +49,76 @@
     "servings": "servings"
   },
   "recipe": {
+    "details": "Recipe Details",
     "ingredients": "Ingredients",
+    "instructions": "Instructions",
     "directions": "Directions",
     "info": "Info",
     "cuisines": "Cuisines",
     "dishTypes": "Dish Types",
-    "step": "Step {{number}}"
+    "step": "Step {{number}}",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "protein": "Protein",
+    "carbs": "Carbohydrates",
+    "fat": "Fat"
   },
   "favorites": {
     "title": "My Recipes",
     "empty": "You have no saved recipes yet. Start exploring!",
+    "emptyTitle": "No saved recipes yet",
+    "emptySubtitle": "Start exploring and save recipes you love. They'll appear here!",
     "emptyCategories": "Create your first category to organize recipes",
     "newCategory": "New Category",
-    "categoryPlaceholder": "e.g. Pasta",
-    "create": "Create",
-    "assignToCategory": "Assign to category"
+    "categoryPlaceholder": "e.g. Pasta, Desserts, Quick meals...",
+    "categoryDescription": "Organize your saved recipes into custom categories",
+    "create": "Create Category",
+    "assignToCategory": "Assign to category",
+    "recipes": "recipes",
+    "all": "All",
+    "allCuisines": "All Cuisines",
+    "filterByCuisine": "Filter by Cuisine",
+    "selectCuisine": "Select a cuisine to filter your recipes",
+    "untitled": "Untitled Recipe",
+    "deleteTitle": "Remove Recipe",
+    "deleteMessage": "Are you sure you want to remove this recipe from your favorites?",
+    "deleteCategoryTitle": "Delete Category",
+    "deleteCategoryMessage": "Are you sure you want to delete this category?"
   },
   "profile": {
-    "title": "Profile",
+    "title": "User Profile",
     "favorites": "Favorites",
     "settings": "Settings",
     "editProfile": "Edit Profile",
     "saved": "Saved",
+    "published": "Published",
+    "info": "Info",
     "posts": "Posts",
     "anonymous": "Anonymous",
     "foodLover": "Food Lover",
     "selectLanguage": "Select Language",
     "languageDownloadError": "Failed to download language. Using English.",
     "languageHint": "Languages are downloaded when selected to save space.",
-    "logoutConfirm": "Are you sure you want to log out?"
+    "logoutConfirm": "Are you sure you want to log out?",
+    "followers": "Followers",
+    "following": "Following",
+    "defaultBio": "Food explorer. Lover of tacos and desserts. #FoodieLife",
+    "noPublished": "No published recipes yet",
+    "memberSince": "Member since 2024"
   },
   "camera": {
     "permissionRequired": "Camera access is required to capture recipes.",
     "flip": "Flip",
     "capture": "Capture",
     "saving": "Saving..."
+  },
+  "mealTypes": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "dessert": "Dessert",
+    "vegetarian": "Vegetarian"
   },
   "filters": {
     "mexican": "Mexican",

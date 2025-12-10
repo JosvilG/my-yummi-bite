@@ -1,110 +1,160 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { observer } from 'mobx-react-lite';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecipeStore } from '@/app/providers/RecipeProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
-import FilterPill from '../components/FilterPill';
 import RecipeCard from '../components/RecipeCard';
-import VerifyButton from '../components/VerifyButton';
 import RecipeCardSkeleton from '@/shared/components/RecipeCardSkeleton';
-import HomeBackground from '@/shared/icons/HomeBackground';
+import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import { saveFavoriteRecipe } from '../services/favoriteService';
-import { CUISINES } from '@/constants/recipe';
+import { MEAL_TYPES } from '@/constants/recipe';
 import { COLORS, FONTS } from '@/constants/theme';
 import type { RecipeSummary } from '../services/spoonacularService';
 
 const { width, height } = Dimensions.get('window');
+
+const getMealTypeTranslationKey = (mealType: string): string => {
+  const key = mealType.toLowerCase().replace(/\s+/g, '');
+  return `mealTypes.${key}`;
+};
+
+interface MealTypePillProps {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}
+
+const MealTypePill: React.FC<MealTypePillProps> = ({ label, selected, onPress }) => {
+  const { t } = useTranslation();
+  const translatedLabel = t(getMealTypeTranslationKey(label), { defaultValue: label });
+  
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      style={[styles.mealTypeChip, selected && styles.mealTypeChipSelected]}
+      scaleValue={0.92}
+    >
+      <Text style={[styles.mealTypeText, selected && styles.mealTypeTextSelected]}>
+        {translatedLabel}
+      </Text>
+    </AnimatedPressable>
+  );
+};
 
 const HomeScreen: React.FC = observer(() => {
   const { t } = useTranslation();
   const recipeStore = useRecipeStore();
   const { user } = useAuth();
   const swiperRef = useRef<Swiper<RecipeSummary>>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedMealType, setSelectedMealType] = useState<string | null>(null);
   const recipes = recipeStore.randomRecipe ?? [];
 
   useEffect(() => {
-    recipeStore.loadRandomRecipe(5);
+    recipeStore.loadRandomRecipe(15);
   }, [recipeStore]);
 
-  const handleToggleFilter = (cuisine: string) => {
-    if (recipeStore.filters.includes(cuisine)) {
-      recipeStore.removeFilter(cuisine);
+  const handleSelectMealType = (mealType: string) => {
+    if (selectedMealType === mealType) {
+      setSelectedMealType(null);
+      recipeStore.setMealType(null);
     } else {
-      recipeStore.addFilter(cuisine);
+      setSelectedMealType(mealType);
+      recipeStore.setMealType(mealType);
     }
-    recipeStore.loadRandomRecipe(5);
-    setCurrentIndex(0);
+    recipeStore.loadRandomRecipe(15);
   };
 
-  const handleSwiped = (cardIndex: number) => {
-    setCurrentIndex(cardIndex + 1);
-  };
+  const handleSwipedLeft = useCallback(() => {
+  }, []);
 
-  const handleSwipedLeft = (cardIndex: number) => {
-    handleSwiped(cardIndex);
-  };
-
-  const handleSwipedRight = async (cardIndex: number) => {
+  const handleSwipedRight = useCallback(async (cardIndex: number) => {
     const recipe = recipes[cardIndex];
     if (!user?.uid || !recipe) return;
-    await saveFavoriteRecipe(user.uid, recipe.id, recipe.image ?? '');
-    handleSwiped(cardIndex);
-  };
+    await saveFavoriteRecipe(user.uid, recipe.id, recipe.image ?? '', recipe.cuisines);
+  }, [recipes, user?.uid]);
 
-  const handleSwipedAll = () => {
-    recipeStore.loadRandomRecipe(5);
-    setCurrentIndex(0);
-  };
+  const handleSwipedAll = useCallback(() => {
+    recipeStore.loadRandomRecipe(15);
+  }, [recipeStore]);
 
-  const handleSkipRecipe = () => {
+  const handleSkipRecipe = useCallback(() => {
     swiperRef.current?.swipeLeft();
-  };
+  }, []);
 
-  const handleSaveRecipe = () => {
+  const handleSaveRecipe = useCallback(() => {
     swiperRef.current?.swipeRight();
-  };
+  }, []);
 
-  const renderCard = (recipe: RecipeSummary, index: number) => {
-    return <RecipeCard recipe={recipe} isActive={index === currentIndex} />;
-  };
+  const renderCard = useCallback((recipe: RecipeSummary) => {
+    return (
+      <RecipeCard 
+        recipe={recipe} 
+        onSkip={handleSkipRecipe}
+        onSave={handleSaveRecipe}
+      />
+    );
+  }, [handleSkipRecipe, handleSaveRecipe]);
 
   const isLoading = recipeStore.loading || recipes.length === 0;
 
   return (
-    <View style={styles.container}>
-      <HomeBackground style={styles.background} />
-      <View style={styles.content}>
-        <View style={styles.filtersContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-            {CUISINES.map(cuisine => (
-              <FilterPill
-                key={cuisine}
-                label={cuisine}
-                selected={recipeStore.filters.includes(cuisine)}
-                onToggle={handleToggleFilter}
-              />
-            ))}
-          </ScrollView>
-        </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.filtersContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.filters}
+        >
+          <AnimatedPressable
+            style={[
+              styles.mealTypeChip,
+              !selectedMealType && styles.mealTypeChipSelected,
+            ]}
+            onPress={() => {
+              setSelectedMealType(null);
+              recipeStore.setMealType(null);
+              recipeStore.loadRandomRecipe(15);
+            }}
+            scaleValue={0.92}
+          >
+            <Text
+              style={[
+                styles.mealTypeText,
+                !selectedMealType && styles.mealTypeTextSelected,
+              ]}
+            >
+              {t('favorites.all')}
+            </Text>
+          </AnimatedPressable>
+          {MEAL_TYPES.map(mealType => (
+            <MealTypePill
+              key={mealType}
+              label={mealType}
+              selected={selectedMealType === mealType}
+              onPress={() => handleSelectMealType(mealType)}
+            />
+          ))}
+        </ScrollView>
+      </View>
 
-        {isLoading ? (
-          <View style={styles.loader}>
-            <RecipeCardSkeleton />
-            <Text style={styles.loaderText}>{t('home.discovering')}</Text>
-          </View>
-        ) : (
-          <View style={styles.swiperContainer}>
-            <Swiper
-              ref={swiperRef}
-              cards={recipes}
-              renderCard={renderCard}
-              onSwipedLeft={handleSwipedLeft}
-              onSwipedRight={handleSwipedRight}
-              onSwipedAll={handleSwipedAll}
-              cardIndex={0}
+      {isLoading ? (
+        <View style={styles.loader}>
+          <RecipeCardSkeleton />
+          <Text style={styles.loaderText}>{t('home.discovering')}</Text>
+        </View>
+      ) : (
+        <View style={styles.swiperContainer}>
+          <Swiper
+            ref={swiperRef}
+            cards={recipes}
+            renderCard={renderCard}
+            onSwipedLeft={handleSwipedLeft}
+            onSwipedRight={handleSwipedRight}
+            onSwipedAll={handleSwipedAll}
+            cardIndex={0}
               backgroundColor="transparent"
               stackSize={3}
               stackScale={8}
@@ -162,30 +212,43 @@ const HomeScreen: React.FC = observer(() => {
             />
           </View>
         )}
-      </View>
-    </View>
+    </SafeAreaView>
   );
 });
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  background: {
-    position: 'absolute',
-    top: width * 0.5,
-  },
-  content: {
-    flex: 1,
-    paddingTop: 40,
+    backgroundColor: COLORS.tertiary,
   },
   filtersContainer: {
-    height: 50,
+    paddingTop: 40,
+    paddingBottom: 16,
   },
   filters: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
+    gap: 8,
+  },
+  mealTypeChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  mealTypeChipSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  mealTypeText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  mealTypeTextSelected: {
+    color: COLORS.background,
   },
   loader: {
     flex: 1,
@@ -202,12 +265,6 @@ const styles = StyleSheet.create({
   },
   swiper: {
     backgroundColor: 'transparent',
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingBottom: 10,
-    paddingHorizontal: 32,
   },
 });
 

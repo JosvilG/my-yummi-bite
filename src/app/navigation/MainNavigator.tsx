@@ -1,15 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import HomeIcon from '@/shared/icons/homeIcon';
-import LargeChef from '@/shared/icons/largeChef';
-import Add from '@/shared/icons/add';
-import ProfileIcon from '@/shared/icons/profile';
+import CustomTabBar from './CustomTabBar';
 import HomeScreen from '@/features/recipes/screens/HomeScreen';
 import SaveScreen from '@/features/recipes/screens/SaveScreen';
 import AddScreen from '@/features/recipes/screens/AddScreen';
 import ProfileScreen from '@/features/profile/screens/ProfileScreen';
-import InfoScreen from '@/features/recipes/screens/InfoScreen';
+import RecipeDetailScreen from '@/features/recipes/screens/RecipeDetailScreen';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -19,39 +16,15 @@ const TabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       initialRouteName="Home"
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <HomeIcon focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Save"
-        component={SaveScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <LargeChef focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Add"
-        component={AddScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <Add focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <ProfileIcon focused={focused} />,
-        }}
-      />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Save" component={SaveScreen} />
+      <Tab.Screen name="Add" component={AddScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };
@@ -66,11 +39,9 @@ const MainNavigator: React.FC = () => {
       <Stack.Screen name="TabNav" component={TabNavigator} />
       <Stack.Screen
         name="Info"
-        component={InfoScreen}
+        component={RecipeDetailScreen}
         options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitle: '',
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

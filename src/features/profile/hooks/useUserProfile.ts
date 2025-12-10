@@ -7,6 +7,7 @@ export interface UserProfile {
   username?: string;
   name?: string;
   email?: string;
+  bio?: string;
 }
 
 export const useUserProfile = (userId?: string) => {

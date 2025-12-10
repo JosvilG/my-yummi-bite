@@ -20,6 +20,7 @@ class RecipeStore {
   randomRecipe: RecipeSummary[] | null = null;
   favRecipes: FavoriteRecipeEntry[] = [];
   filters: string[] = [];
+  mealType: string | null = null;
   recipeInfo: RecipeSummary | null = null;
   categories: string[] = [];
   activeCategory: string | null = null;
@@ -35,7 +36,7 @@ class RecipeStore {
     this.loading = true;
     this.error = null;
 
-    const result = await fetchRandomRecipes(this.filters, count);
+    const result = await fetchRandomRecipes(this.filters, count, this.mealType);
 
     runInAction(() => {
       if (result.success) {
@@ -90,6 +91,10 @@ class RecipeStore {
     this.filters = this.filters.filter(item => item !== filter);
   }
 
+  setMealType(mealType: string | null) {
+    this.mealType = mealType;
+  }
+
   addCategory(category: string) {
     if (!this.categories.includes(category)) {
       this.categories.push(category);
@@ -126,6 +131,7 @@ class RecipeStore {
     this.randomRecipe = null;
     this.favRecipes = [];
     this.filters = [];
+    this.mealType = null;
     this.recipeInfo = null;
     this.categories = [];
     this.activeCategory = null;

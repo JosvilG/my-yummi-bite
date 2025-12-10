@@ -318,7 +318,6 @@ export const getMockRecipes = (count: number, cuisineFilters: string[] = []): Re
     );
   }
 
-  // Shuffle and return requested count
   const shuffled = recipes.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };

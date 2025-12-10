@@ -18,6 +18,14 @@ export const CUISINES: string[] = [
   'Korean',
 ];
 
+export const MEAL_TYPES: string[] = [
+  'Breakfast',
+  'Lunch',
+  'Dinner',
+  'Dessert',
+  'Vegetarian',
+];
+
 export const CATEGORIES = {
   BREAKFAST: 'Breakfast',
   LUNCH: 'Lunch',

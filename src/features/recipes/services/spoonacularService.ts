@@ -35,9 +35,9 @@ export interface RecipeSummary {
 
 export const fetchRandomRecipes = async (
   cuisineFilters: string[] = [],
-  numberOfRecipes = 1
+  numberOfRecipes = 1,
+  mealType?: string | null
 ): Promise<{ success: boolean; recipes?: RecipeSummary[]; error?: string }> => {
-  // Use mock data in development
   if (FeatureFlags.USE_MOCK_RECIPES) {
     const mockRecipes = getMockRecipes(numberOfRecipes, cuisineFilters);
     return { success: true, recipes: mockRecipes };
@@ -48,6 +48,10 @@ export const fetchRandomRecipes = async (
 
     if (cuisineFilters.length > 0) {
       url += `&cuisine=${cuisineFilters.join(',')}`;
+    }
+
+    if (mealType) {
+      url += `&type=${mealType.toLowerCase()}`;
     }
 
     const response = await fetch(url);
@@ -66,7 +70,6 @@ export const fetchRandomRecipes = async (
 export const fetchRecipeInfo = async (
   recipeId: number
 ): Promise<{ success: boolean; recipe?: RecipeSummary; error?: string }> => {
-  // Use mock data in development
   if (FeatureFlags.USE_MOCK_RECIPES) {
     const mockRecipe = getMockRecipeById(recipeId);
     if (mockRecipe) {
@@ -96,7 +99,6 @@ export const searchRecipes = async (
   cuisineFilters: string[] = [],
   numberOfRecipes = 10
 ): Promise<{ success: boolean; recipes?: RecipeSummary[]; error?: string }> => {
-  // Use mock data in development
   if (FeatureFlags.USE_MOCK_RECIPES) {
     let recipes = getMockRecipes(numberOfRecipes, cuisineFilters);
     if (searchQuery) {

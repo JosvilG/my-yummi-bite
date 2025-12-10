@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
 
     },
     confirmBtn: {
-        backgroundColor: '#FCB13A',
+        backgroundColor: '#FF8A9B',
         /* flex: 1, */
         height: 23,
         borderRadius: 15,
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     },
     register: {
         marginHorizontal: 5,
-        color: '#FC633A',
+        color: '#FF8A9B',
     },
     background: {
         position: 'absolute',

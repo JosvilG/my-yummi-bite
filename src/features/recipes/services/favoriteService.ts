@@ -16,6 +16,7 @@ export interface FavoriteRecipeDoc {
   url: string;
   savedAt?: Timestamp | Date;
   category?: string;
+  cuisines?: string[];
 }
 
 const favRecipesRef = (userId: string) => collection(db, 'users', userId, 'FavRecipes');
@@ -23,7 +24,8 @@ const favRecipesRef = (userId: string) => collection(db, 'users', userId, 'FavRe
 export const saveFavoriteRecipe = async (
   userId: string,
   recipeId: number,
-  imageUrl: string
+  imageUrl: string,
+  cuisines?: string[]
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const ref = favRecipesRef(userId);
@@ -31,6 +33,7 @@ export const saveFavoriteRecipe = async (
       id: recipeId,
       url: imageUrl,
       savedAt: new Date(),
+      ...(cuisines && cuisines.length > 0 && { cuisines }),
     });
     return { success: true };
   } catch (error: unknown) {

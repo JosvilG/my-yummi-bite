@@ -1,7 +1,5 @@
 import { action, computed, makeObservable, observable, observe } from "mobx";
 import React, { createContext } from "react";
-import { fire } from "../database/firebase";
-
 
 const URL_BASE = 'https://api.spoonacular.com/recipes';
 const apiKey = "";
@@ -103,8 +101,7 @@ class MyYummiBiteModel {
     }
 
     async loadRandomRecipe() {
-        //de moment utilitzarem l'endpoint "complexSearch" en lloc del random, ja que també permet obtenir receptes random i a més podem guardar mes informacio que en la del random
-        //hem de saber si tenim o no filtres activats
+    
         if (this.filters.length === 0) {
             const response = await fetch(`${URL_BASE}/complexSearch?apiKey=${apiKey}&number=${numberOfRecipes}&sort=random&addRecipeNutrition=true`);
             const json = await response.json();
@@ -120,8 +117,6 @@ class MyYummiBiteModel {
 export const getRecipeInfo = async (id, setRecipeInfo) => {
     const response = await fetch(`${URL_BASE}/${id}/information?apiKey=${apiKey}&includeNutrition=true`);
     const recipeInfo = await response.json();
-    /* console.log(`${URL_BASE}/${id}/information?apiKey=${apiKey}&includeNutrition=true`);
-    console.log(recipeInfo); */
     setRecipeInfo(recipeInfo);
 }
 
