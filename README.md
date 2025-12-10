@@ -12,6 +12,14 @@ Una aplicación móvil moderna para descubrir recetas aleatorias, guardar tus fa
 - 🔥 Firebase para autenticación y almacenamiento
 - 🍽️ Integración con Spoonacular API
 
+## Estado del Proyecto
+
+- ✅ Flujo de autenticación completo con pantallas rediseñadas y validaciones.
+- ✅ Experiencia visual adaptativa con selector de tema claro/oscuro/automático y uso consistente de la paleta.
+- ✅ Internacionalización mediante i18next, selector de idioma y textos traducibles en toda la app.
+- ✅ Pestaña de perfil conectada a Firestore con favoritos, configuraciones y modales coherentes.
+- 🚧 Pendiente: pruebas automatizadas, soporte offline/búsqueda avanzada y experiencias sociales (compartir y puntuación).
+
 ## 🚀 Inicio Rápido
 
 ### Prerequisitos
@@ -238,9 +246,8 @@ Este proyecto está bajo la licencia MIT. Ver archivo `LICENSE` para más detall
 - [ ] Soporte offline
 - [ ] Compartir recetas en redes sociales
 - [ ] Sistema de puntuación de recetas
-- [ ] Búsqueda avanzada de recetas
-- [ ] Modo oscuro
-- [ ] Internacionalización (i18n)
+- [x] Modo oscuro
+- [x] Internacionalización (i18n)
 
 ## 🛠️ Comandos Útiles
 
