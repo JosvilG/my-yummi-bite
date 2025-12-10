@@ -74,7 +74,13 @@
     "categoryPlaceholder": "e.g. Pasta, Desserts, Quick meals...",
     "categoryDescription": "Organize your saved recipes into custom categories",
     "create": "Create Category",
-    "assignToCategory": "Assign to category",
+    "assignToCategory": "Assign to Category",
+    "selectCategoryForRecipe": "Choose a category for this recipe",
+    "selectCategoryForRecipes": "Choose a category for {{count}} recipes",
+    "noCategory": "No Category",
+    "assignCategoryError": "Could not assign category",
+    "someAssignmentsFailed": "Some recipes could not be assigned",
+    "categoryAssigned": "Category assigned successfully",
     "recipes": "recipes",
     "all": "All",
     "allCuisines": "All Cuisines",
@@ -84,7 +90,9 @@
     "deleteTitle": "Remove Recipe",
     "deleteMessage": "Are you sure you want to remove this recipe from your favorites?",
     "deleteCategoryTitle": "Delete Category",
-    "deleteCategoryMessage": "Are you sure you want to delete this category?"
+    "deleteCategoryMessage": "Are you sure you want to delete this category?",
+    "selected": "selected",
+    "moveToCategory": "Move to Category"
   },
   "profile": {
     "title": "User Profile",

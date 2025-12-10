@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Alert,
   Dimensions,
@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  Vibration,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { observer } from 'mobx-react-lite';
@@ -26,6 +27,7 @@ import { useUserCategories } from '../hooks/useUserCategories';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import { CUISINES } from '@/constants/recipe';
 import { COLORS, FONTS } from '@/constants/theme';
+import { updateRecipeCategory } from '../services/favoriteService';
 import type { FavoriteRecipeDoc } from '../services/favoriteService';
 import type { UserCategory } from '../services/categoryService';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
@@ -48,6 +50,13 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [cuisineModalVisible, setCuisineModalVisible] = useState<boolean>(false);
   const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
+  const [assignCategoryModalVisible, setAssignCategoryModalVisible] = useState<boolean>(false);
+  const [selectedRecipeForCategory, setSelectedRecipeForCategory] = useState<FavoriteRecipeDoc | null>(null);
+  const [assigningCategory, setAssigningCategory] = useState<boolean>(false);
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(new Set());
+  const [deleteCategoryModalVisible, setDeleteCategoryModalVisible] = useState<boolean>(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<UserCategory | null>(null);
 
   let filteredRecipes = recipeStore.activeCategory
     ? favorites.filter(recipe => recipe.category === recipeStore.activeCategory)
@@ -102,33 +111,131 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
     );
   };
 
-  const renderRecipe = ({ item }: { item: FavoriteRecipeDoc }) => (
-    <AnimatedPressable
-      style={styles.recipeCard}
-      onPress={() => navigation.navigate('Info', { id: item.id, rId: item.docId })}
-      scaleValue={0.96}
-    >
-      <Image source={{ uri: item.url }} style={styles.recipeImage} />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.6)']}
-        style={styles.imageOverlay}
-      />
-      <View style={styles.cardContent}>
-        {item.category && (
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{item.category}</Text>
+  const handleRecipeLongPress = useCallback((recipe: FavoriteRecipeDoc) => {
+    if (!selectionMode) {
+      Vibration.vibrate(50);
+      setSelectionMode(true);
+      setSelectedRecipes(new Set([recipe.docId]));
+    }
+  }, [selectionMode]);
+
+  const handleRecipePress = useCallback((recipe: FavoriteRecipeDoc) => {
+    if (selectionMode) {
+      setSelectedRecipes(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(recipe.docId)) {
+          newSet.delete(recipe.docId);
+          if (newSet.size === 0) {
+            setSelectionMode(false);
+          }
+        } else {
+          newSet.add(recipe.docId);
+        }
+        return newSet;
+      });
+    } else {
+      navigation.navigate('Info', { id: recipe.id, rId: recipe.docId });
+    }
+  }, [selectionMode, navigation]);
+
+  const handleCancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedRecipes(new Set());
+  }, []);
+
+  const handleOpenCategoryModal = useCallback(() => {
+    setAssignCategoryModalVisible(true);
+  }, []);
+
+  const handleAssignCategoryToSelected = async (categoryName: string | null) => {
+    if (!user?.uid || selectedRecipes.size === 0) return;
+    
+    setAssigningCategory(true);
+    try {
+      const promises = Array.from(selectedRecipes).map(docId =>
+        updateRecipeCategory(user.uid, docId, categoryName)
+      );
+      
+      const results = await Promise.all(promises);
+      const failed = results.filter(r => !r.success);
+      
+      if (failed.length > 0) {
+        Alert.alert('Error', t('favorites.someAssignmentsFailed'));
+      }
+    } catch (error) {
+      Alert.alert('Error', t('favorites.assignCategoryError'));
+    } finally {
+      setAssigningCategory(false);
+      setAssignCategoryModalVisible(false);
+      setSelectionMode(false);
+      setSelectedRecipes(new Set());
+    }
+  };
+
+  const handleAssignCategory = async (categoryName: string | null) => {
+    if (!selectedRecipeForCategory || !user?.uid) return;
+    
+    setAssigningCategory(true);
+    try {
+      const result = await updateRecipeCategory(
+        user.uid,
+        selectedRecipeForCategory.docId,
+        categoryName
+      );
+      
+      if (!result.success) {
+        Alert.alert('Error', result.error || t('favorites.assignCategoryError'));
+      }
+    } catch (error) {
+      Alert.alert('Error', t('favorites.assignCategoryError'));
+    } finally {
+      setAssigningCategory(false);
+      setAssignCategoryModalVisible(false);
+      setSelectedRecipeForCategory(null);
+    }
+  };
+
+  const renderRecipe = ({ item }: { item: FavoriteRecipeDoc }) => {
+    const isSelected = selectedRecipes.has(item.docId);
+    
+    return (
+      <AnimatedPressable
+        style={[styles.recipeCard, selectionMode && isSelected && styles.recipeCardSelected]}
+        onPress={() => handleRecipePress(item)}
+        onLongPress={() => handleRecipeLongPress(item)}
+        scaleValue={0.96}
+      >
+        <Image source={{ uri: item.url }} style={styles.recipeImage} />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.6)']}
+          style={styles.imageOverlay}
+        />
+        {selectionMode && (
+          <View style={styles.selectionOverlay}>
+            <View style={[styles.selectionCheckbox, isSelected && styles.selectionCheckboxSelected]}>
+              {isSelected && <Ionicons name="checkmark" size={18} color={COLORS.background} />}
+            </View>
           </View>
         )}
-      </View>
-      <AnimatedPressable
-        style={styles.deleteButton}
-        onPress={() => handleDeleteFavorite(item.docId)}
-        scaleValue={0.85}
-      >
-        <Ionicons name="heart" size={20} color={COLORS.primary} />
+        <View style={styles.cardContent}>
+          {item.category && (
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryBadgeText}>{item.category}</Text>
+            </View>
+          )}
+        </View>
+        {!selectionMode && (
+          <AnimatedPressable
+            style={styles.deleteButton}
+            onPress={() => handleDeleteFavorite(item.docId)}
+            scaleValue={0.85}
+          >
+            <Ionicons name="heart" size={20} color={COLORS.primary} />
+          </AnimatedPressable>
+        )}
       </AnimatedPressable>
-    </AnimatedPressable>
-  );
+    );
+  };
 
   const renderCategoryChip = (category: UserCategory) => {
     const isSelected = recipeStore.activeCategory === category.category;
@@ -138,18 +245,8 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
         onPress={() => handleCategoryPress(category.category)}
         onLongPress={() => {
-          Alert.alert(
-            t('favorites.deleteCategoryTitle'),
-            t('favorites.deleteCategoryMessage'),
-            [
-              { text: t('common.cancel'), style: 'cancel' },
-              {
-                text: t('common.delete'),
-                style: 'destructive',
-                onPress: () => deleteCategory(category.id),
-              },
-            ]
-          );
+          setCategoryToDelete(category);
+          setDeleteCategoryModalVisible(true);
         }}
         scaleValue={0.92}
       >
@@ -172,12 +269,28 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('favorites.title')}</Text>
-        <Text style={styles.headerSubtitle}>
-          {filteredRecipes.length} {t('favorites.recipes')}
-        </Text>
-      </View>
+      {selectionMode ? (
+        <View style={styles.selectionHeader}>
+          <AnimatedPressable
+            style={styles.selectionCancelButton}
+            onPress={handleCancelSelection}
+            scaleValue={0.92}
+          >
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </AnimatedPressable>
+          <Text style={styles.selectionHeaderTitle}>
+            {selectedRecipes.size} {t('favorites.selected')}
+          </Text>
+          <View style={styles.selectionHeaderSpacer} />
+        </View>
+      ) : (
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{t('favorites.title')}</Text>
+          <Text style={styles.headerSubtitle}>
+            {filteredRecipes.length} {t('favorites.recipes')}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.categoriesSection}>
         <ScrollView
@@ -221,16 +334,18 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
             onPress={() => setCuisineModalVisible(true)}
             scaleValue={0.85}
           >
-            <Ionicons 
-              name="flag-outline" 
-              size={18} 
-              color={selectedCuisine ? COLORS.background : COLORS.primary} 
-            />
-            {selectedCuisine && (
-              <Text style={styles.cuisineFilterText}>
-                {t(`cuisines.${selectedCuisine.toLowerCase().replace(/\s+/g, '')}`, { defaultValue: selectedCuisine })}
-              </Text>
-            )}
+            <View style={styles.cuisineFilterContent}>
+              <Ionicons 
+                name="flag-outline" 
+                size={18} 
+                color={selectedCuisine ? COLORS.background : COLORS.primary} 
+              />
+              {selectedCuisine && (
+                <Text style={styles.cuisineFilterText}>
+                  {t(`cuisines.${selectedCuisine.toLowerCase().replace(/\s+/g, '')}`, { defaultValue: selectedCuisine })}
+                </Text>
+              )}
+            </View>
           </AnimatedPressable>
         </ScrollView>
       </View>
@@ -363,6 +478,158 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={assignCategoryModalVisible}
+        onRequestClose={() => {
+          setAssignCategoryModalVisible(false);
+          setSelectedRecipeForCategory(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.cuisineModalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalIconContainer}>
+                <Ionicons name="folder-open-outline" size={32} color={COLORS.primary} />
+              </View>
+              <Text style={styles.modalTitle}>{t('favorites.assignToCategory')}</Text>
+              <Text style={styles.modalSubtitle}>
+                {selectionMode 
+                  ? t('favorites.selectCategoryForRecipes', { count: selectedRecipes.size })
+                  : t('favorites.selectCategoryForRecipe')
+                }
+              </Text>
+            </View>
+
+            <ScrollView style={styles.cuisineList} showsVerticalScrollIndicator={false}>
+              <AnimatedPressable
+                style={styles.cuisineOption}
+                pressableStyle={styles.cuisineOptionPressable}
+                onPress={() => selectionMode ? handleAssignCategoryToSelected(null) : handleAssignCategory(null)}
+                scaleValue={0.96}
+              >
+                <View style={styles.categoryOptionContent}>
+                  <Ionicons name="close-circle-outline" size={20} color={COLORS.textLight} />
+                  <Text style={styles.cuisineOptionText}>
+                    {t('favorites.noCategory')}
+                  </Text>
+                </View>
+              </AnimatedPressable>
+
+              {categories.map((category) => (
+                <AnimatedPressable
+                  key={category.id}
+                  style={styles.cuisineOption}
+                  pressableStyle={styles.cuisineOptionPressable}
+                  onPress={() => selectionMode ? handleAssignCategoryToSelected(category.category) : handleAssignCategory(category.category)}
+                  scaleValue={0.96}
+                >
+                  <View style={styles.categoryOptionContent}>
+                    <Ionicons 
+                      name="folder-outline" 
+                      size={20} 
+                      color={COLORS.primary} 
+                    />
+                    <Text style={styles.cuisineOptionText}>
+                      {category.category}
+                    </Text>
+                  </View>
+                </AnimatedPressable>
+              ))}
+            </ScrollView>
+
+            {assigningCategory && (
+              <View style={styles.assigningIndicator}>
+                <Text style={styles.assigningText}>{t('common.saving')}</Text>
+              </View>
+            )}
+
+            <AnimatedPressable
+              style={styles.modalCancelButton}
+              onPress={() => {
+                setAssignCategoryModalVisible(false);
+                setSelectedRecipeForCategory(null);
+              }}
+              scaleValue={0.96}
+            >
+              <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+            </AnimatedPressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={deleteCategoryModalVisible}
+        onRequestClose={() => {
+          setDeleteCategoryModalVisible(false);
+          setCategoryToDelete(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteCategoryModalCard}>
+            <View style={styles.deleteCategoryIconContainer}>
+              <Ionicons name="trash-outline" size={36} color={COLORS.primary} />
+            </View>
+            
+            <Text style={styles.deleteCategoryTitle}>{t('favorites.deleteCategoryTitle')}</Text>
+            
+            {categoryToDelete && (
+              <View style={styles.deleteCategoryNameContainer}>
+                <Text style={styles.deleteCategoryName}>{categoryToDelete.category}</Text>
+              </View>
+            )}
+            
+            <Text style={styles.deleteCategoryMessage}>{t('favorites.deleteCategoryMessage')}</Text>
+            
+            <View style={styles.deleteCategoryButtons}>
+              <AnimatedPressable
+                style={styles.deleteCategoryCancelButton}
+                onPress={() => {
+                  setDeleteCategoryModalVisible(false);
+                  setCategoryToDelete(null);
+                }}
+                scaleValue={0.96}
+              >
+                <Text style={styles.deleteCategoryCancelText}>{t('common.cancel')}</Text>
+              </AnimatedPressable>
+              
+              <AnimatedPressable
+                style={styles.deleteCategoryConfirmButton}
+                onPress={() => {
+                  if (categoryToDelete) {
+                    deleteCategory(categoryToDelete.id);
+                  }
+                  setDeleteCategoryModalVisible(false);
+                  setCategoryToDelete(null);
+                }}
+                scaleValue={0.96}
+              >
+                <View style={styles.deleteCategoryConfirmContent}>
+                  <Ionicons name="trash" size={16} color={COLORS.background} />
+                  <Text style={styles.deleteCategoryConfirmText}>{t('common.delete')}</Text>
+                </View>
+              </AnimatedPressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {selectionMode && selectedRecipes.size > 0 && (
+        <View style={styles.selectionActionBar}>
+          <AnimatedPressable
+            style={styles.selectionActionButton}
+            onPress={handleOpenCategoryModal}
+            scaleValue={0.92}
+          >
+            <Ionicons name="folder-open-outline" size={24} color={COLORS.background} />
+            <Text style={styles.selectionActionText}>{t('favorites.moveToCategory')}</Text>
+          </AnimatedPressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 });
@@ -428,19 +695,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cuisineFilterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 18,
     backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.primary,
-    gap: 6,
   },
   cuisineFilterButtonActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
+  },
+  cuisineFilterContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   cuisineFilterText: {
     fontSize: 13,
@@ -656,6 +925,181 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   cuisineOptionTextSelected: {
+    color: COLORS.background,
+  },
+  categoryOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  assigningIndicator: {
+    marginTop: 12,
+    paddingVertical: 8,
+  },
+  assigningText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    color: COLORS.primary,
+  },
+  selectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.tertiary,
+  },
+  selectionCancelButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectionHeaderTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: FONTS.bold,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  selectionHeaderSpacer: {
+    width: 40,
+  },
+  recipeCardSelected: {
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+  },
+  selectionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    padding: 10,
+  },
+  selectionCheckbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectionCheckboxSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  selectionActionBar: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  selectionActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  selectionActionText: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: COLORS.background,
+  },
+  deleteCategoryModalCard: {
+    backgroundColor: COLORS.background,
+    borderRadius: 24,
+    padding: 24,
+    width: '85%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  deleteCategoryIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  deleteCategoryTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  deleteCategoryNameContainer: {
+    backgroundColor: COLORS.tertiary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  deleteCategoryName: {
+    fontFamily: FONTS.bold,
+    fontSize: 16,
+    color: COLORS.primary,
+  },
+  deleteCategoryMessage: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  deleteCategoryButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  deleteCategoryCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteCategoryCancelText: {
+    fontFamily: FONTS.medium,
+    fontSize: 15,
+    color: COLORS.text,
+  },
+  deleteCategoryConfirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+  },
+  deleteCategoryConfirmContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  deleteCategoryConfirmText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15,
     color: COLORS.background,
   },
 });

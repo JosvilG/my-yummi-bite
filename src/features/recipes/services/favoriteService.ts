@@ -7,6 +7,7 @@ import {
   query,
   onSnapshot,
   Timestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
 
@@ -88,4 +89,23 @@ export const subscribeToFavoriteRecipes = (
     });
     callback(recipes);
   });
+};
+
+export const updateRecipeCategory = async (
+  userId: string,
+  docId: string,
+  category: string | null
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const recipeRef = doc(db, 'users', userId, 'FavRecipes', docId);
+    if (category) {
+      await updateDoc(recipeRef, { category });
+    } else {
+      await updateDoc(recipeRef, { category: null });
+    }
+    return { success: true };
+  } catch (error: unknown) {
+    console.error('Error updating recipe category:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
 };
