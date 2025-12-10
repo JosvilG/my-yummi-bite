@@ -1,14 +1,16 @@
 import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import Skeleton from './Skeleton';
-import { COLORS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.65;
 
 const RecipeCardSkeleton: React.FC = () => {
+  const colors = useColors();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.shapesContainer}>
         <Skeleton width={120} height={120} borderRadius={60} style={styles.shape1} />
         <Skeleton width={80} height={80} borderRadius={40} style={styles.shape2} />
@@ -48,7 +50,6 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     borderRadius: 30,
     overflow: 'hidden',
-    backgroundColor: COLORS.background,
     marginHorizontal: 20,
     elevation: 4,
     shadowColor: '#000',

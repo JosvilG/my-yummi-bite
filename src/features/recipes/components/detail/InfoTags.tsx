@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import InfoTag from '../InfoTag';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 const InfoTags: React.FC<Props> = ({ cuisines = [], dishTypes = [] }) => {
+  const colors = useColors();
   const tags = [...cuisines, ...dishTypes];
 
   if (tags.length === 0) {
@@ -17,7 +19,7 @@ const InfoTags: React.FC<Props> = ({ cuisines = [], dishTypes = [] }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tags</Text>
+      <Text style={[styles.title, { color: colors.background }]}>Tags</Text>
       <View style={styles.tags}>
         {tags.map(tag => (
           <React.Fragment key={tag}>
@@ -37,7 +39,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: FONTS.bold,
     fontSize: 20,
-    color: COLORS.background,
     marginBottom: 12,
   },
   tags: {

@@ -21,7 +21,8 @@ import { fetchRecipeInfo, type RecipeSummary } from '../services/spoonacularServ
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUserCategories } from '../hooks/useUserCategories';
 import { assignRecipeCategory } from '../services/categoryService';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import type { MainStackParamList } from '@/types/navigation';
 
 const BANNER_HEIGHT = 340;
@@ -52,6 +53,7 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
   const { id, rId } = route.params || {};
   const { user } = useAuth();
   const { categories } = useUserCategories(user?.uid);
+  const colors = useColors();
   const [recipe, setRecipe] = useState<RecipeSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +84,7 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ReturnHeaderButton style={styles.returnButton} onPress={() => navigation.goBack()} />
         <RecipeDetailSkeleton />
       </View>
@@ -91,8 +93,8 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
 
   if (error || !recipe) {
     return (
-      <View style={styles.loader}>
-        <Text style={styles.errorText}>{error || t('home.recipeNotFound')}</Text>
+      <View style={[styles.loader, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: colors.error }]}>{error || t('home.recipeNotFound')}</Text>
       </View>
     );
   }
@@ -103,7 +105,7 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ReturnHeaderButton style={styles.returnButton} onPress={() => navigation.goBack()} />
       <Animated.ScrollView
         scrollEventThrottle={16}
@@ -157,7 +159,6 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   loader: {
     flex: 1,
@@ -166,7 +167,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontFamily: FONTS.medium,
-    color: COLORS.error,
   },
   returnButton: {
     position: 'absolute',
@@ -190,13 +190,11 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: FONTS.bold,
     fontSize: 24,
-    color: COLORS.background,
     textAlign: 'center',
     marginTop: 12,
   },
   subtitle: {
     fontFamily: FONTS.medium,
-    color: COLORS.background,
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -204,7 +202,6 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   summary: {
-    color: COLORS.background,
     fontFamily: FONTS.regular,
     fontSize: 14,
     lineHeight: 20,
@@ -214,7 +211,6 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     width: 160,
-    backgroundColor: COLORS.background,
     alignSelf: 'center',
     marginVertical: 24,
   },

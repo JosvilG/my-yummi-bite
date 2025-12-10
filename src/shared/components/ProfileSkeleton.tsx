@@ -1,11 +1,13 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Skeleton from './Skeleton';
-import { COLORS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 const ProfileSkeleton: React.FC = () => {
+  const colors = useColors();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Skeleton width={110} height={110} borderRadius={55} style={styles.avatar} />
       
       <Skeleton width={150} height={24} borderRadius={8} style={styles.username} />
@@ -30,7 +32,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: 24,
-    backgroundColor: COLORS.background,
   },
   avatar: {
     marginBottom: 16,

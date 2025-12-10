@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CameraView as ExpoCameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 const RecipeCameraView: React.FC = () => {
   const { t } = useTranslation();
+  const colors = useColors();
   const cameraRef = useRef<ExpoCameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -49,20 +51,26 @@ const RecipeCameraView: React.FC = () => {
   if (hasPermission === false) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.permissionText}>{t('common.cameraPermission')}</Text>
+        <Text style={[styles.permissionText, { color: colors.text }]}>{t('common.cameraPermission')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ExpoCameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing}>
         <View style={styles.overlay}>
           <TouchableOpacity style={styles.secondaryButton} onPress={handleFlipCamera}>
-            <Text style={styles.secondaryText}>{t('common.flip')}</Text>
+            <Text style={[styles.secondaryText, { color: colors.background }]}>{t('common.flip')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.captureButton} onPress={handleCapture} disabled={isProcessing}>
-            <Text style={styles.captureText}>{isProcessing ? t('common.saving') : t('common.capture')}</Text>
+          <TouchableOpacity 
+            style={[styles.captureButton, { backgroundColor: colors.primary }]} 
+            onPress={handleCapture} 
+            disabled={isProcessing}
+          >
+            <Text style={[styles.captureText, { color: colors.background }]}>
+              {isProcessing ? t('common.saving') : t('common.capture')}
+            </Text>
           </TouchableOpacity>
         </View>
       </ExpoCameraView>
@@ -73,7 +81,6 @@ const RecipeCameraView: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   centered: {
     flex: 1,
@@ -82,7 +89,6 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     fontFamily: FONTS.medium,
-    color: COLORS.text,
     textAlign: 'center',
     marginHorizontal: 32,
   },
@@ -96,13 +102,11 @@ const styles = StyleSheet.create({
     width: 160,
     paddingVertical: 16,
     borderRadius: 32,
-    backgroundColor: COLORS.primary,
     alignItems: 'center',
     marginTop: 12,
   },
   captureText: {
     fontFamily: FONTS.bold,
-    color: COLORS.background,
     textTransform: 'uppercase',
   },
   secondaryButton: {
@@ -113,7 +117,6 @@ const styles = StyleSheet.create({
   },
   secondaryText: {
     fontFamily: FONTS.medium,
-    color: COLORS.background,
   },
 });
 

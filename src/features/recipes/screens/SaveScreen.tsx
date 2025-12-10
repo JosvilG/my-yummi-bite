@@ -26,7 +26,8 @@ import { useFavoriteRecipes } from '../hooks/useFavoriteRecipes';
 import { useUserCategories } from '../hooks/useUserCategories';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import { CUISINES } from '@/constants/recipe';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import { updateRecipeCategory } from '../services/favoriteService';
 import type { FavoriteRecipeDoc } from '../services/favoriteService';
 import type { UserCategory } from '../services/categoryService';
@@ -43,6 +44,7 @@ type SaveScreenProps = CompositeScreenProps<
 const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const colors = useColors();
   const recipeStore = useRecipeStore();
   const { favorites, loading, removeFavorite } = useFavoriteRecipes();
   const { categories, addCategory, deleteCategory } = useUserCategories(user?.uid);
@@ -213,7 +215,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         {selectionMode && (
           <View style={styles.selectionOverlay}>
             <View style={[styles.selectionCheckbox, isSelected && styles.selectionCheckboxSelected]}>
-              {isSelected && <Ionicons name="checkmark" size={18} color={COLORS.background} />}
+              {isSelected && <Ionicons name="checkmark" size={18} color={colors.background} />}
             </View>
           </View>
         )}
@@ -230,7 +232,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
             onPress={() => handleDeleteFavorite(item.docId)}
             scaleValue={0.85}
           >
-            <Ionicons name="heart" size={20} color={COLORS.primary} />
+            <Ionicons name="heart" size={20} color={colors.primary} />
           </AnimatedPressable>
         )}
       </AnimatedPressable>
@@ -242,7 +244,10 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
     return (
       <AnimatedPressable
         key={category.id}
-        style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+        style={[
+          styles.categoryChip,
+          { backgroundColor: isSelected ? colors.primary : colors.background, borderColor: isSelected ? colors.primary : colors.border },
+        ]}
         onPress={() => handleCategoryPress(category.category)}
         onLongPress={() => {
           setCategoryToDelete(category);
@@ -250,7 +255,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         }}
         scaleValue={0.92}
       >
-        <Text style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}>
+        <Text style={[styles.categoryChipText, { color: isSelected ? colors.background : colors.text }]}>
           {category.category}
         </Text>
       </AnimatedPressable>
@@ -260,7 +265,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
-        <Ionicons name="heart-outline" size={64} color={COLORS.secondary} />
+        <Ionicons name="heart-outline" size={64} color={colors.secondary} />
       </View>
       <Text style={styles.emptyTitle}>{t('favorites.emptyTitle')}</Text>
       <Text style={styles.emptySubtitle}>{t('favorites.emptySubtitle')}</Text>
@@ -268,7 +273,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.tertiary }]} edges={['top']}>
       {selectionMode ? (
         <View style={styles.selectionHeader}>
           <AnimatedPressable
@@ -276,7 +281,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
             onPress={handleCancelSelection}
             scaleValue={0.92}
           >
-            <Ionicons name="close" size={24} color={COLORS.text} />
+            <Ionicons name="close" size={24} color={colors.text} />
           </AnimatedPressable>
           <Text style={styles.selectionHeaderTitle}>
             {selectedRecipes.size} {t('favorites.selected')}
@@ -285,8 +290,8 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         </View>
       ) : (
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('favorites.title')}</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('favorites.title')}</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
             {filteredRecipes.length} {t('favorites.recipes')}
           </Text>
         </View>
@@ -301,7 +306,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
           <AnimatedPressable
             style={[
               styles.categoryChip,
-              !recipeStore.activeCategory && styles.categoryChipSelected,
+              { backgroundColor: !recipeStore.activeCategory ? colors.primary : colors.background, borderColor: !recipeStore.activeCategory ? colors.primary : colors.border },
             ]}
             onPress={() => recipeStore.setActiveCategory(null)}
             scaleValue={0.92}
@@ -309,7 +314,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
             <Text
               style={[
                 styles.categoryChipText,
-                !recipeStore.activeCategory && styles.categoryChipTextSelected,
+                { color: !recipeStore.activeCategory ? colors.background : colors.text },
               ]}
             >
               {t('favorites.all')}
@@ -323,13 +328,16 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
             onPress={() => setModalVisible(true)}
             scaleValue={0.85}
           >
-            <Ionicons name="add" size={20} color={COLORS.primary} />
+            <Ionicons name="add" size={20} color={colors.primary} />
           </AnimatedPressable>
 
           <AnimatedPressable
             style={[
               styles.cuisineFilterButton,
-              selectedCuisine && styles.cuisineFilterButtonActive,
+              { 
+                backgroundColor: selectedCuisine ? colors.primary : colors.background,
+                borderColor: colors.primary,
+              },
             ]}
             onPress={() => setCuisineModalVisible(true)}
             scaleValue={0.85}
@@ -338,7 +346,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
               <Ionicons 
                 name="flag-outline" 
                 size={18} 
-                color={selectedCuisine ? COLORS.background : COLORS.primary} 
+                color={selectedCuisine ? colors.background : colors.primary} 
               />
               {selectedCuisine && (
                 <Text style={styles.cuisineFilterText}>
@@ -368,26 +376,26 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <View style={styles.modalIconContainer}>
-                <Ionicons name="folder-outline" size={32} color={COLORS.primary} />
+              <View style={[styles.modalIconContainer, { backgroundColor: colors.tertiary }]}>
+                <Ionicons name="folder-outline" size={32} color={colors.primary} />
               </View>
-              <Text style={styles.modalTitle}>{t('favorites.newCategory')}</Text>
-              <Text style={styles.modalSubtitle}>{t('favorites.categoryDescription')}</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('favorites.newCategory')}</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.textLight }]}>{t('favorites.categoryDescription')}</Text>
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.tertiary, borderColor: colors.border, color: colors.text }]}
               placeholder={t('favorites.categoryPlaceholder')}
-              placeholderTextColor={COLORS.textLight}
+              placeholderTextColor={colors.textLight}
               value={categoryText}
               onChangeText={setCategoryText}
               autoFocus
             />
 
-            <AnimatedPressable style={styles.modalButton} onPress={handleAddCategory} scaleValue={0.96}>
-              <Text style={styles.modalButtonText}>{t('favorites.create')}</Text>
+            <AnimatedPressable style={[styles.modalButton, { backgroundColor: colors.primary }]} onPress={handleAddCategory} scaleValue={0.96}>
+              <Text style={[styles.modalButtonText, { color: colors.background }]}>{t('favorites.create')}</Text>
             </AnimatedPressable>
 
             <AnimatedPressable
@@ -395,7 +403,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
               onPress={() => setModalVisible(false)}
               scaleValue={0.96}
             >
-              <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCancelText, { color: colors.textLight }]}>{t('common.cancel')}</Text>
             </AnimatedPressable>
           </View>
         </View>
@@ -408,20 +416,20 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         onRequestClose={() => setCuisineModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.cuisineModalCard}>
+          <View style={[styles.cuisineModalCard, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <View style={styles.modalIconContainer}>
-                <Ionicons name="flag-outline" size={32} color={COLORS.primary} />
+              <View style={[styles.modalIconContainer, { backgroundColor: colors.tertiary }]}>
+                <Ionicons name="flag-outline" size={32} color={colors.primary} />
               </View>
-              <Text style={styles.modalTitle}>{t('favorites.filterByCuisine')}</Text>
-              <Text style={styles.modalSubtitle}>{t('favorites.selectCuisine')}</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('favorites.filterByCuisine')}</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.textLight }]}>{t('favorites.selectCuisine')}</Text>
             </View>
 
             <ScrollView style={styles.cuisineList} showsVerticalScrollIndicator={false}>
               <AnimatedPressable
                 style={[
                   styles.cuisineOption,
-                  !selectedCuisine && styles.cuisineOptionSelected,
+                  { backgroundColor: !selectedCuisine ? colors.primary : colors.tertiary },
                 ]}
                 pressableStyle={styles.cuisineOptionPressable}
                 onPress={() => {
@@ -432,12 +440,12 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
               >
                 <Text style={[
                   styles.cuisineOptionText,
-                  !selectedCuisine && styles.cuisineOptionTextSelected,
+                  { color: !selectedCuisine ? colors.background : colors.text },
                 ]}>
                   {t('favorites.all')}
                 </Text>
                 {!selectedCuisine && (
-                  <Ionicons name="checkmark" size={20} color={COLORS.background} />
+                  <Ionicons name="checkmark" size={20} color={colors.background} />
                 )}
               </AnimatedPressable>
 
@@ -446,7 +454,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
                   key={cuisine}
                   style={[
                     styles.cuisineOption,
-                    selectedCuisine === cuisine && styles.cuisineOptionSelected,
+                    { backgroundColor: selectedCuisine === cuisine ? colors.primary : colors.tertiary },
                   ]}
                   pressableStyle={styles.cuisineOptionPressable}
                   onPress={() => {
@@ -457,12 +465,12 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
                 >
                   <Text style={[
                     styles.cuisineOptionText,
-                    selectedCuisine === cuisine && styles.cuisineOptionTextSelected,
+                    { color: selectedCuisine === cuisine ? colors.background : colors.text },
                   ]}>
                     {t(`cuisines.${cuisine.toLowerCase().replace(/\s+/g, '')}`, { defaultValue: cuisine })}
                   </Text>
                   {selectedCuisine === cuisine && (
-                    <Ionicons name="checkmark" size={20} color={COLORS.background} />
+                    <Ionicons name="checkmark" size={20} color={colors.background} />
                   )}
                 </AnimatedPressable>
               ))}
@@ -473,7 +481,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
               onPress={() => setCuisineModalVisible(false)}
               scaleValue={0.96}
             >
-              <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCancelText, { color: colors.textLight }]}>{t('common.cancel')}</Text>
             </AnimatedPressable>
           </View>
         </View>
@@ -489,13 +497,13 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.cuisineModalCard}>
+          <View style={[styles.cuisineModalCard, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <View style={styles.modalIconContainer}>
-                <Ionicons name="folder-open-outline" size={32} color={COLORS.primary} />
+              <View style={[styles.modalIconContainer, { backgroundColor: colors.tertiary }]}>
+                <Ionicons name="folder-open-outline" size={32} color={colors.primary} />
               </View>
-              <Text style={styles.modalTitle}>{t('favorites.assignToCategory')}</Text>
-              <Text style={styles.modalSubtitle}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('favorites.assignToCategory')}</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.textLight }]}>
                 {selectionMode 
                   ? t('favorites.selectCategoryForRecipes', { count: selectedRecipes.size })
                   : t('favorites.selectCategoryForRecipe')
@@ -505,14 +513,14 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
 
             <ScrollView style={styles.cuisineList} showsVerticalScrollIndicator={false}>
               <AnimatedPressable
-                style={styles.cuisineOption}
+                style={[styles.cuisineOption, { backgroundColor: colors.tertiary }]}
                 pressableStyle={styles.cuisineOptionPressable}
                 onPress={() => selectionMode ? handleAssignCategoryToSelected(null) : handleAssignCategory(null)}
                 scaleValue={0.96}
               >
                 <View style={styles.categoryOptionContent}>
-                  <Ionicons name="close-circle-outline" size={20} color={COLORS.textLight} />
-                  <Text style={styles.cuisineOptionText}>
+                  <Ionicons name="close-circle-outline" size={20} color={colors.textLight} />
+                  <Text style={[styles.cuisineOptionText, { color: colors.text }]}>
                     {t('favorites.noCategory')}
                   </Text>
                 </View>
@@ -521,7 +529,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
               {categories.map((category) => (
                 <AnimatedPressable
                   key={category.id}
-                  style={styles.cuisineOption}
+                  style={[styles.cuisineOption, { backgroundColor: colors.tertiary }]}
                   pressableStyle={styles.cuisineOptionPressable}
                   onPress={() => selectionMode ? handleAssignCategoryToSelected(category.category) : handleAssignCategory(category.category)}
                   scaleValue={0.96}
@@ -530,9 +538,9 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
                     <Ionicons 
                       name="folder-outline" 
                       size={20} 
-                      color={COLORS.primary} 
+                      color={colors.primary} 
                     />
-                    <Text style={styles.cuisineOptionText}>
+                    <Text style={[styles.cuisineOptionText, { color: colors.text }]}>
                       {category.category}
                     </Text>
                   </View>
@@ -542,7 +550,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
 
             {assigningCategory && (
               <View style={styles.assigningIndicator}>
-                <Text style={styles.assigningText}>{t('common.saving')}</Text>
+                <Text style={[styles.assigningText, { color: colors.primary }]}>{t('common.saving')}</Text>
               </View>
             )}
 
@@ -554,7 +562,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
               }}
               scaleValue={0.96}
             >
-              <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCancelText, { color: colors.textLight }]}>{t('common.cancel')}</Text>
             </AnimatedPressable>
           </View>
         </View>
@@ -570,35 +578,35 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.deleteCategoryModalCard}>
-            <View style={styles.deleteCategoryIconContainer}>
-              <Ionicons name="trash-outline" size={36} color={COLORS.primary} />
+          <View style={[styles.deleteCategoryModalCard, { backgroundColor: colors.background }]}>
+            <View style={[styles.deleteCategoryIconContainer, { backgroundColor: colors.tertiary }]}>
+              <Ionicons name="trash-outline" size={36} color={colors.primary} />
             </View>
             
-            <Text style={styles.deleteCategoryTitle}>{t('favorites.deleteCategoryTitle')}</Text>
+            <Text style={[styles.deleteCategoryTitle, { color: colors.text }]}>{t('favorites.deleteCategoryTitle')}</Text>
             
             {categoryToDelete && (
-              <View style={styles.deleteCategoryNameContainer}>
-                <Text style={styles.deleteCategoryName}>{categoryToDelete.category}</Text>
+              <View style={[styles.deleteCategoryNameContainer, { backgroundColor: colors.tertiary }]}>
+                <Text style={[styles.deleteCategoryName, { color: colors.primary }]}>{categoryToDelete.category}</Text>
               </View>
             )}
             
-            <Text style={styles.deleteCategoryMessage}>{t('favorites.deleteCategoryMessage')}</Text>
+            <Text style={[styles.deleteCategoryMessage, { color: colors.textLight }]}>{t('favorites.deleteCategoryMessage')}</Text>
             
             <View style={styles.deleteCategoryButtons}>
               <AnimatedPressable
-                style={styles.deleteCategoryCancelButton}
+                style={[styles.deleteCategoryCancelButton, { backgroundColor: colors.tertiary }]}
                 onPress={() => {
                   setDeleteCategoryModalVisible(false);
                   setCategoryToDelete(null);
                 }}
                 scaleValue={0.96}
               >
-                <Text style={styles.deleteCategoryCancelText}>{t('common.cancel')}</Text>
+                <Text style={[styles.deleteCategoryCancelText, { color: colors.text }]}>{t('common.cancel')}</Text>
               </AnimatedPressable>
               
               <AnimatedPressable
-                style={styles.deleteCategoryConfirmButton}
+                style={[styles.deleteCategoryConfirmButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
                   if (categoryToDelete) {
                     deleteCategory(categoryToDelete.id);
@@ -609,8 +617,8 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
                 scaleValue={0.96}
               >
                 <View style={styles.deleteCategoryConfirmContent}>
-                  <Ionicons name="trash" size={16} color={COLORS.background} />
-                  <Text style={styles.deleteCategoryConfirmText}>{t('common.delete')}</Text>
+                  <Ionicons name="trash" size={16} color={colors.background} />
+                  <Text style={[styles.deleteCategoryConfirmText, { color: colors.background }]}>{t('common.delete')}</Text>
                 </View>
               </AnimatedPressable>
             </View>
@@ -619,14 +627,14 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
       </Modal>
 
       {selectionMode && selectedRecipes.size > 0 && (
-        <View style={styles.selectionActionBar}>
+        <View style={[styles.selectionActionBar, { backgroundColor: colors.primary }]}>
           <AnimatedPressable
             style={styles.selectionActionButton}
             onPress={handleOpenCategoryModal}
             scaleValue={0.92}
           >
-            <Ionicons name="folder-open-outline" size={24} color={COLORS.background} />
-            <Text style={styles.selectionActionText}>{t('favorites.moveToCategory')}</Text>
+            <Ionicons name="folder-open-outline" size={24} color={colors.background} />
+            <Text style={[styles.selectionActionText, { color: colors.background }]}>{t('favorites.moveToCategory')}</Text>
           </AnimatedPressable>
         </View>
       )}
@@ -637,7 +645,6 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.tertiary,
   },
   header: {
     paddingHorizontal: 20,
@@ -647,12 +654,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
   },
   headerSubtitle: {
     fontSize: 14,
     fontFamily: FONTS.regular,
-    color: COLORS.textLight,
     marginTop: 4,
   },
   categoriesSection: {
@@ -667,29 +672,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  categoryChipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   categoryChipText: {
     fontSize: 14,
     fontFamily: FONTS.medium,
-    color: COLORS.text,
-  },
-  categoryChipTextSelected: {
-    color: COLORS.background,
   },
   addCategoryButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: COLORS.primary,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -698,13 +691,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 18,
-    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  cuisineFilterButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   cuisineFilterContent: {
     flexDirection: 'row',
@@ -714,7 +701,6 @@ const styles = StyleSheet.create({
   cuisineFilterText: {
     fontSize: 13,
     fontFamily: FONTS.medium,
-    color: COLORS.background,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -729,7 +715,6 @@ const styles = StyleSheet.create({
     height: CARD_WIDTH * 1.3,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: COLORS.background,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -765,7 +750,6 @@ const styles = StyleSheet.create({
   categoryBadgeText: {
     fontSize: 11,
     fontFamily: FONTS.medium,
-    color: COLORS.background,
   },
   deleteButton: {
     position: 'absolute',
@@ -774,7 +758,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -794,11 +777,10 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: COLORS.primary,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -807,14 +789,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: FONTS.regular,
-    color: COLORS.textLight,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -826,7 +806,6 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: width * 0.85,
-    backgroundColor: COLORS.background,
     padding: 24,
     borderRadius: 24,
     alignItems: 'center',
@@ -839,7 +818,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: COLORS.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -847,38 +825,31 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
     textAlign: 'center',
   },
   modalSubtitle: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.textLight,
     textAlign: 'center',
     marginTop: 8,
   },
   modalInput: {
     width: '100%',
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 20,
-    color: COLORS.text,
     fontFamily: FONTS.regular,
     fontSize: 16,
-    backgroundColor: COLORS.tertiary,
   },
   modalButton: {
     width: '100%',
-    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   modalButtonText: {
-    color: COLORS.background,
     fontFamily: FONTS.bold,
     fontSize: 16,
   },
@@ -887,12 +858,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   modalCancelText: {
-    color: COLORS.textLight,
     fontFamily: FONTS.medium,
     fontSize: 14,
   },
   cuisineModalCard: {
-    backgroundColor: COLORS.background,
     borderRadius: 24,
     padding: 24,
     width: '90%',
@@ -906,7 +875,6 @@ const styles = StyleSheet.create({
   },
   cuisineOption: {
     borderRadius: 12,
-    backgroundColor: COLORS.tertiary,
     marginBottom: 8,
   },
   cuisineOptionPressable: {
@@ -916,16 +884,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  cuisineOptionSelected: {
-    backgroundColor: COLORS.accent,
-  },
   cuisineOptionText: {
     fontFamily: FONTS.medium,
     fontSize: 16,
-    color: COLORS.text,
-  },
-  cuisineOptionTextSelected: {
-    color: COLORS.background,
   },
   categoryOptionContent: {
     flexDirection: 'row',
@@ -939,20 +900,17 @@ const styles = StyleSheet.create({
   assigningText: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.primary,
   },
   selectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.tertiary,
   },
   selectionCancelButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -960,7 +918,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
     textAlign: 'center',
   },
   selectionHeaderSpacer: {
@@ -968,7 +925,6 @@ const styles = StyleSheet.create({
   },
   recipeCardSelected: {
     borderWidth: 3,
-    borderColor: COLORS.primary,
   },
   selectionOverlay: {
     position: 'absolute',
@@ -987,20 +943,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderWidth: 2,
-    borderColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectionCheckboxSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   selectionActionBar: {
     position: 'absolute',
     bottom: 100,
     left: 20,
     right: 20,
-    backgroundColor: COLORS.primary,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -1019,10 +971,8 @@ const styles = StyleSheet.create({
   selectionActionText: {
     fontSize: 16,
     fontFamily: FONTS.bold,
-    color: COLORS.background,
   },
   deleteCategoryModalCard: {
-    backgroundColor: COLORS.background,
     borderRadius: 24,
     padding: 24,
     width: '85%',
@@ -1033,7 +983,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: COLORS.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -1041,12 +990,10 @@ const styles = StyleSheet.create({
   deleteCategoryTitle: {
     fontFamily: FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   deleteCategoryNameContainer: {
-    backgroundColor: COLORS.tertiary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
@@ -1055,12 +1002,10 @@ const styles = StyleSheet.create({
   deleteCategoryName: {
     fontFamily: FONTS.bold,
     fontSize: 16,
-    color: COLORS.primary,
   },
   deleteCategoryMessage: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.textLight,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -1075,21 +1020,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: COLORS.tertiary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteCategoryCancelText: {
     fontFamily: FONTS.medium,
     fontSize: 15,
-    color: COLORS.text,
   },
   deleteCategoryConfirmButton: {
     flex: 1,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: COLORS.primary,
   },
   deleteCategoryConfirmContent: {
     flexDirection: 'row',
@@ -1100,7 +1042,6 @@ const styles = StyleSheet.create({
   deleteCategoryConfirmText: {
     fontFamily: FONTS.bold,
     fontSize: 15,
-    color: COLORS.background,
   },
 });
 

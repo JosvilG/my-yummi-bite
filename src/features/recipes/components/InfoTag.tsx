@@ -1,17 +1,20 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 interface Props {
   children?: React.ReactNode;
 }
 
 const InfoTag: React.FC<Props> = ({ children }) => {
+  const colors = useColors();
+
   if (!children) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{children}</Text>
+      <Text style={[styles.text, { color: colors.primary }]}>{children}</Text>
     </View>
   );
 };
@@ -28,7 +31,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     textTransform: 'uppercase',
     fontSize: 12,
-    color: COLORS.primary,
   },
 });
 

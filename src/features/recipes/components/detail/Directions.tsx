@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 interface DirectionStep {
   number: number;
@@ -12,14 +13,16 @@ interface Props {
 }
 
 const Directions: React.FC<Props> = ({ steps = [] }) => {
+  const colors = useColors();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Directions</Text>
+      <Text style={[styles.title, { color: colors.background }]}>Directions</Text>
       <FlatList
         data={steps}
         keyExtractor={(item: DirectionStep) => String(item.number)}
         renderItem={({ item, index }: { item: DirectionStep; index: number }) => (
-          <Text style={styles.step}>
+          <Text style={[styles.step, { color: colors.background }]}>
             {index + 1}. {item.step}
           </Text>
         )}
@@ -36,14 +39,12 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: FONTS.bold,
     fontSize: 20,
-    color: COLORS.background,
     marginBottom: 12,
     textAlign: 'center',
   },
   step: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.background,
     lineHeight: 20,
   },
   separator: {

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 interface Props {
   label: string;
@@ -16,15 +17,26 @@ const getCuisineTranslationKey = (cuisine: string): string => {
 
 const FilterPill: React.FC<Props> = ({ label, selected, onToggle }: Props) => {
   const { t, i18n } = useTranslation();
+  const colors = useColors();
   
   const translatedLabel = t(getCuisineTranslationKey(label), { defaultValue: label });
 
   return (
     <Pressable
       onPress={() => onToggle(label)}
-      style={[styles.pill, selected ? styles.pillSelected : styles.pillDefault]}
+      style={[
+        styles.pill, 
+        selected 
+          ? { backgroundColor: colors.primary } 
+          : { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.primary }
+      ]}
     >
-      <Text style={[styles.text, selected ? styles.textSelected : styles.textDefault]}>{translatedLabel}</Text>
+      <Text style={[
+        styles.text, 
+        { color: selected ? colors.background : colors.primary }
+      ]}>
+        {translatedLabel}
+      </Text>
     </Pressable>
   );
 };
@@ -39,24 +51,10 @@ const styles = StyleSheet.create({
     elevation: 2,
     maxHeight: 36,
   },
-  pillDefault: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  pillSelected: {
-    backgroundColor: COLORS.primary,
-  },
   text: {
     fontFamily: FONTS.bold,
     textTransform: 'uppercase',
     fontSize: 12,
-  },
-  textDefault: {
-    color: COLORS.primary,
-  },
-  textSelected: {
-    color: COLORS.background,
   },
 });
 

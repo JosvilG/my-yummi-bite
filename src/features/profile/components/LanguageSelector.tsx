@@ -8,7 +8,8 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import {
   AVAILABLE_LANGUAGES,
   changeLanguageWithDownload,
@@ -25,6 +26,7 @@ type LoadingStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const LanguageSelector: React.FC<Props> = ({ visible, onClose }) => {
   const { t, i18n } = useTranslation();
+  const colors = useColors();
   const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>('idle');
   const [selectedLang, setSelectedLang] = useState<string | null>(null);
   const [cachedLanguages, setCachedLanguages] = useState<Record<string, boolean>>({});
@@ -89,28 +91,37 @@ const LanguageSelector: React.FC<Props> = ({ visible, onClose }) => {
         key={language.code}
         style={[
           styles.languageItem,
-          isCurrentLanguage && styles.languageItemActive,
+          { backgroundColor: colors.secondary },
+          isCurrentLanguage && { 
+            backgroundColor: colors.primary + '15',
+            borderWidth: 1,
+            borderColor: colors.primary,
+          },
         ]}
         onPress={() => handleLanguageSelect(language)}
         disabled={loadingStatus === 'loading'}
       >
         <View style={styles.languageInfo}>
-          <Text style={[styles.languageName, isCurrentLanguage && styles.languageNameActive]}>
+          <Text style={[
+            styles.languageName, 
+            { color: colors.text },
+            isCurrentLanguage && { color: colors.primary }
+          ]}>
             {language.nativeName}
           </Text>
-          <Text style={styles.languageNameSecondary}>
+          <Text style={[styles.languageNameSecondary, { color: colors.textLight }]}>
             {language.name}
           </Text>
         </View>
         
         <View style={styles.languageStatus}>
           {isLoading ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <>
               {isCurrentLanguage && (
-                <View style={styles.checkmark}>
-                  <Text style={styles.checkmarkText}>✓</Text>
+                <View style={[styles.checkmark, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                  <Text style={[styles.checkmarkText, { color: colors.primary }]}>✓</Text>
                 </View>
               )}
             </>
@@ -128,11 +139,11 @@ const LanguageSelector: React.FC<Props> = ({ visible, onClose }) => {
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={styles.container} onStartShouldSetResponder={() => true}>
+        <View style={[styles.container, { backgroundColor: colors.background }]} onStartShouldSetResponder={() => true}>
           <View style={styles.header}>
-            <Text style={styles.title}>{t('profile.selectLanguage')}</Text>
+            <Text style={[styles.title, { color: colors.primary }]}>{t('profile.selectLanguage')}</Text>
             <Pressable onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[styles.closeButtonText, { color: colors.textLight }]}>✕</Text>
             </Pressable>
           </View>
 
@@ -146,7 +157,7 @@ const LanguageSelector: React.FC<Props> = ({ visible, onClose }) => {
             {AVAILABLE_LANGUAGES.map(renderLanguageItem)}
           </View>
 
-          <Text style={styles.hint}>{t('profile.languageHint')}</Text>
+          <Text style={[styles.hint, { color: colors.textLight }]}>{t('profile.languageHint')}</Text>
         </View>
       </Pressable>
     </Modal>
@@ -160,7 +171,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: COLORS.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -177,14 +187,12 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: FONTS.bold,
     fontSize: 20,
-    color: COLORS.primary,
   },
   closeButton: {
     padding: 8,
   },
   closeButtonText: {
     fontSize: 20,
-    color: COLORS.textLight,
   },
   errorBanner: {
     backgroundColor: '#ffebee',
@@ -209,12 +217,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: COLORS.secondary,
-  },
-  languageItemActive: {
-    backgroundColor: COLORS.primary + '15',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
   },
   languageInfo: {
     flex: 1,
@@ -222,15 +224,10 @@ const styles = StyleSheet.create({
   languageName: {
     fontFamily: FONTS.bold,
     fontSize: 16,
-    color: COLORS.text,
-  },
-  languageNameActive: {
-    color: COLORS.primary,
   },
   languageNameSecondary: {
     fontFamily: FONTS.regular,
     fontSize: 13,
-    color: COLORS.textLight,
     marginTop: 2,
   },
   languageStatus: {
@@ -241,27 +238,22 @@ const styles = StyleSheet.create({
   cachedBadge: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.textLight,
   },
   checkmark: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.background,
     borderWidth: 2,
-    borderColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkmarkText: {
-    color: COLORS.primary,
     fontSize: 14,
     fontWeight: 'bold',
   },
   hint: {
     fontFamily: FONTS.regular,
     fontSize: 12,
-    color: COLORS.textLight,
     textAlign: 'center',
   },
 });

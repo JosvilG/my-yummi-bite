@@ -16,7 +16,8 @@ import Title from '@/shared/components/Title';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import LogInBackground from '@/shared/icons/loginBG';
 import { loginUser } from '../services/authService';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import type { AuthStackParamList } from '@/types/navigation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -25,6 +26,7 @@ export type LogInScreenProps = NativeStackScreenProps<AuthStackParamList, 'LogIn
 
 const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
+  const colors = useColors();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -45,7 +47,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: colors.primary }]}>
       <LogInBackground style={styles.background} />
       
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -55,14 +57,14 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
         >
           <View style={styles.content}>
             <View style={styles.titleContainer}>
-              <Title color={COLORS.background}>My Yummi Bite</Title>
+              <Title color={colors.text}>My Yummi Bite</Title>
             </View>
 
             <View style={styles.formContainer}>
               <TextInput
                 placeholder={t('auth.email')}
                 placeholderTextColor="rgba(255,255,255,0.7)"
-                style={styles.textInput}
+                style={[styles.textInput, { color: '#FFFFFF' }]}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -72,7 +74,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
               <TextInput
                 placeholder={t('auth.password')}
                 placeholderTextColor="rgba(255,255,255,0.7)"
-                style={styles.textInput}
+                style={[styles.textInput, { color: '#FFFFFF' }]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -80,26 +82,26 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
               />
               
               <AnimatedPressable
-                style={styles.confirmBtn}
+                style={[styles.confirmBtn, { backgroundColor: colors.text }]}
                 onPress={handleLogIn}
                 disabled={loading}
                 scaleValue={0.96}
               >
-                <Text style={styles.buttonText}>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>
                   {loading ? t('common.loading') : t('common.confirm')}
                 </Text>
               </AnimatedPressable>
 
               <AnimatedPressable style={styles.forgotPassword} scaleValue={0.96}>
-                <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
+                <Text style={[styles.forgotPasswordText, { color: colors.text }]}>{t('auth.forgotPassword')}</Text>
               </AnimatedPressable>
             </View>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.noAccountText}>{t('auth.noAccount')}</Text>
+            <Text style={[styles.noAccountText, { color: 'rgba(255,255,255,0.8)' }]}>{t('auth.noAccount')}</Text>
             <AnimatedPressable onPress={() => navigation.navigate('SignUp')} scaleValue={0.96}>
-              <Text style={styles.registerText}> {t('auth.signUp')}</Text>
+              <Text style={[styles.registerText, { color: '#FFFFFF' }]}> {t('auth.signUp')}</Text>
             </AnimatedPressable>
           </View>
         </KeyboardAvoidingView>
@@ -111,7 +113,6 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: COLORS.primary,
   },
   background: {
     position: 'absolute',
@@ -142,7 +143,6 @@ const styles = StyleSheet.create({
   },
   textInput: {
     width: '100%',
-    color: COLORS.background,
     borderBottomWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
     paddingHorizontal: 4,
@@ -152,7 +152,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
   },
   confirmBtn: {
-    backgroundColor: COLORS.background,
     minHeight: 50,
     borderRadius: 25,
     paddingHorizontal: 60,
@@ -169,7 +168,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     textAlign: 'center',
     fontSize: 14,
-    color: COLORS.primary,
   },
   forgotPassword: {
     marginTop: 20,
@@ -178,7 +176,6 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.background,
     textDecorationLine: 'underline',
   },
   footer: {
@@ -191,12 +188,10 @@ const styles = StyleSheet.create({
   noAccountText: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.text,
   },
   registerText: {
     fontFamily: FONTS.bold,
     fontSize: 14,
-    color: COLORS.background,
   },
 });
 

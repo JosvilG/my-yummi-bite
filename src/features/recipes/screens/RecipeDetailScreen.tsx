@@ -16,7 +16,8 @@ import { fetchRecipeInfo, type RecipeSummary } from '../services/spoonacularServ
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUserCategories } from '../hooks/useUserCategories';
 import { useFavoriteRecipes } from '../hooks/useFavoriteRecipes';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import type { MainStackParamList } from '@/types/navigation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -29,6 +30,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
   const { user } = useAuth();
   const { categories } = useUserCategories(user?.uid);
   const { favorites, addFavorite, removeFavorite } = useFavoriteRecipes();
+  const colors = useColors();
   
   const [recipe, setRecipe] = useState<RecipeSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -87,7 +89,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.tertiary }]}>
         <RecipeDetailSkeleton />
       </View>
     );
@@ -95,8 +97,8 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
 
   if (error || !recipe) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error || t('home.recipeNotFound')}</Text>
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: colors.error }]}>{error || t('home.recipeNotFound')}</Text>
       </View>
     );
   }
@@ -108,22 +110,22 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
   const fat = nutrients.find(n => n.name === 'Fat')?.amount || 0;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.tertiary }]}>
+      <View style={[styles.header, { backgroundColor: colors.tertiary }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('recipe.details')}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('recipe.details')}</Text>
         <View style={styles.headerRight}>
           <Pressable onPress={handleFavoritePress} style={styles.headerButton}>
             <Ionicons 
               name={isFavorite ? 'heart' : 'heart-outline'} 
               size={24} 
-              color={isFavorite ? COLORS.primary : COLORS.text} 
+              color={isFavorite ? colors.primary : colors.text} 
             />
           </Pressable>
           <Pressable style={styles.headerButton}>
-            <Ionicons name="share-outline" size={24} color={COLORS.text} />
+            <Ionicons name="share-outline" size={24} color={colors.text} />
           </Pressable>
         </View>
       </View>
@@ -134,44 +136,56 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroSection}>
-          <View style={styles.imageContainer}>
+          <View style={[styles.imageContainer, { backgroundColor: colors.background }]}>
             <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
           </View>
         </View>
 
-        <View style={styles.contentCard}>
-          <Text style={styles.recipeTitle}>{recipe.title}</Text>
+        <View style={[styles.contentCard, { backgroundColor: colors.background }]}>
+          <Text style={[styles.recipeTitle, { color: colors.text }]}>{recipe.title}</Text>
 
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
-              <Ionicons name="star-outline" size={16} color={COLORS.textLight} />
-              <Text style={styles.infoText}>4,8</Text>
+              <Ionicons name="star-outline" size={16} color={colors.textLight} />
+              <Text style={[styles.infoText, { color: colors.textLight }]}>4,8</Text>
             </View>
-            <View style={styles.infoDivider} />
+            <View style={[styles.infoDivider, { backgroundColor: colors.tertiary }]} />
             <View style={styles.infoItem}>
-              <Ionicons name="time-outline" size={16} color={COLORS.textLight} />
-              <Text style={styles.infoText}>{recipe.readyInMinutes} min</Text>
+              <Ionicons name="time-outline" size={16} color={colors.textLight} />
+              <Text style={[styles.infoText, { color: colors.textLight }]}>{recipe.readyInMinutes} min</Text>
             </View>
-            <View style={styles.infoDivider} />
+            <View style={[styles.infoDivider, { backgroundColor: colors.tertiary }]} />
             <View style={styles.infoItem}>
-              <Text style={styles.infoText}>{getDifficultyText(recipe.readyInMinutes || 30)}</Text>
+              <Text style={[styles.infoText, { color: colors.textLight }]}>{getDifficultyText(recipe.readyInMinutes || 30)}</Text>
             </View>
           </View>
 
-          <View style={styles.tabsContainer}>
+          <View style={[styles.tabsContainer, { backgroundColor: colors.tertiary }]}>
             <Pressable
-              style={[styles.tab, activeTab === 'ingredients' && styles.activeTab]}
+              style={[
+                styles.tab, 
+                { backgroundColor: activeTab === 'ingredients' ? colors.background : 'transparent' }
+              ]}
               onPress={() => setActiveTab('ingredients')}
             >
-              <Text style={[styles.tabText, activeTab === 'ingredients' && styles.activeTabText]}>
+              <Text style={[
+                styles.tabText, 
+                { color: activeTab === 'ingredients' ? colors.primary : colors.textLight }
+              ]}>
                 {t('recipe.ingredients')}
               </Text>
             </Pressable>
             <Pressable
-              style={[styles.tab, activeTab === 'instructions' && styles.activeTab]}
+              style={[
+                styles.tab, 
+                { backgroundColor: activeTab === 'instructions' ? colors.background : 'transparent' }
+              ]}
               onPress={() => setActiveTab('instructions')}
             >
-              <Text style={[styles.tabText, activeTab === 'instructions' && styles.activeTabText]}>
+              <Text style={[
+                styles.tabText, 
+                { color: activeTab === 'instructions' ? colors.primary : colors.textLight }
+              ]}>
                 {t('recipe.instructions')}
               </Text>
             </Pressable>
@@ -190,14 +204,22 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
                     style={styles.ingredientRow}
                     onPress={() => toggleIngredientCheck(ingredient.id)}
                   >
-                    <View style={[styles.checkbox, isChecked && styles.checkedBox]}>
-                      {isChecked && <Ionicons name="checkmark" size={14} color={COLORS.background} />}
+                    <View style={[
+                      styles.checkbox, 
+                      { borderColor: colors.primary },
+                      isChecked && { backgroundColor: colors.primary, borderColor: colors.primary }
+                    ]}>
+                      {isChecked && <Ionicons name="checkmark" size={14} color={colors.background} />}
                     </View>
                     <Image
                       source={{ uri: `https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}` }}
                       style={styles.ingredientImage}
                     />
-                    <Text style={[styles.ingredientText, isChecked && styles.checkedText]}>
+                    <Text style={[
+                      styles.ingredientText, 
+                      { color: colors.text },
+                      isChecked && { color: colors.textLight, textDecorationLine: 'line-through' }
+                    ]}>
                       {amount}{unit} {ingredient.name}
                     </Text>
                   </Pressable>
@@ -208,31 +230,31 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
             <View style={styles.instructionsList}>
               {recipe.analyzedInstructions?.[0]?.steps?.map((step, index) => (
                 <View key={step.number} style={styles.instructionRow}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>{index + 1}</Text>
+                  <View style={[styles.stepNumber, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.stepNumberText, { color: colors.background }]}>{index + 1}</Text>
                   </View>
-                  <Text style={styles.instructionText}>{step.step}</Text>
+                  <Text style={[styles.instructionText, { color: colors.text }]}>{step.step}</Text>
                 </View>
               ))}
             </View>
           )}
 
-          <View style={styles.nutritionContainer}>
+          <View style={[styles.nutritionContainer, { backgroundColor: colors.tertiary }]}>
             <View style={styles.nutritionItem}>
-              <Text style={styles.nutritionValue}>{Math.round(calories)}</Text>
-              <Text style={styles.nutritionLabel}>kcal</Text>
+              <Text style={[styles.nutritionValue, { color: colors.text }]}>{Math.round(calories)}</Text>
+              <Text style={[styles.nutritionLabel, { color: colors.textLight }]}>kcal</Text>
             </View>
             <View style={styles.nutritionItem}>
-              <Text style={styles.nutritionValue}>{Math.round(protein)}g</Text>
-              <Text style={styles.nutritionLabel}>{t('recipe.protein')}</Text>
+              <Text style={[styles.nutritionValue, { color: colors.text }]}>{Math.round(protein)}g</Text>
+              <Text style={[styles.nutritionLabel, { color: colors.textLight }]}>{t('recipe.protein')}</Text>
             </View>
             <View style={styles.nutritionItem}>
-              <Text style={styles.nutritionValue}>{Math.round(carbs)}g</Text>
-              <Text style={styles.nutritionLabel}>{t('recipe.carbs')}</Text>
+              <Text style={[styles.nutritionValue, { color: colors.text }]}>{Math.round(carbs)}g</Text>
+              <Text style={[styles.nutritionLabel, { color: colors.textLight }]}>{t('recipe.carbs')}</Text>
             </View>
             <View style={styles.nutritionItem}>
-              <Text style={styles.nutritionValue}>{Math.round(fat)}g</Text>
-              <Text style={styles.nutritionLabel}>{t('recipe.fat')}</Text>
+              <Text style={[styles.nutritionValue, { color: colors.text }]}>{Math.round(fat)}g</Text>
+              <Text style={[styles.nutritionLabel, { color: colors.textLight }]}>{t('recipe.fat')}</Text>
             </View>
           </View>
         </View>
@@ -244,17 +266,14 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.tertiary,
   },
   errorContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.background,
   },
   errorText: {
     fontFamily: FONTS.medium,
-    color: COLORS.error,
     fontSize: 16,
   },
   header: {
@@ -264,7 +283,6 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: COLORS.tertiary,
   },
   headerButton: {
     width: 40,
@@ -275,7 +293,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: FONTS.medium,
     fontSize: 18,
-    color: COLORS.text,
   },
   headerRight: {
     flexDirection: 'row',
@@ -295,7 +312,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1.3,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: COLORS.background,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -308,7 +324,6 @@ const styles = StyleSheet.create({
   },
   contentCard: {
     flex: 1,
-    backgroundColor: COLORS.background,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     marginTop: -30,
@@ -320,7 +335,6 @@ const styles = StyleSheet.create({
   recipeTitle: {
     fontFamily: FONTS.bold,
     fontSize: 22,
-    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -338,17 +352,14 @@ const styles = StyleSheet.create({
   infoText: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.textLight,
   },
   infoDivider: {
     width: 1,
     height: 16,
-    backgroundColor: COLORS.border,
     marginHorizontal: 16,
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.tertiary,
     borderRadius: 25,
     padding: 4,
     marginBottom: 24,
@@ -359,21 +370,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
   },
-  activeTab: {
-    backgroundColor: COLORS.background,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
   tabText: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.textLight,
-  },
-  activeTabText: {
-    color: COLORS.primary,
   },
   ingredientsList: {
     marginBottom: 24,
@@ -383,38 +382,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  checkedBox: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   ingredientImage: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: COLORS.tertiary,
     marginRight: 12,
   },
   ingredientText: {
     flex: 1,
     fontFamily: FONTS.regular,
     fontSize: 15,
-    color: COLORS.text,
-  },
-  checkedText: {
-    textDecorationLine: 'line-through',
-    color: COLORS.textLight,
   },
   instructionsList: {
     marginBottom: 24,
@@ -427,7 +415,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -436,19 +423,16 @@ const styles = StyleSheet.create({
   stepNumberText: {
     fontFamily: FONTS.bold,
     fontSize: 14,
-    color: COLORS.background,
   },
   instructionText: {
     flex: 1,
     fontFamily: FONTS.regular,
     fontSize: 15,
-    color: COLORS.text,
     lineHeight: 22,
   },
   nutritionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: COLORS.tertiary,
     borderRadius: 20,
     paddingVertical: 20,
     paddingHorizontal: 16,
@@ -460,12 +444,10 @@ const styles = StyleSheet.create({
   nutritionValue: {
     fontFamily: FONTS.bold,
     fontSize: 18,
-    color: COLORS.text,
   },
   nutritionLabel: {
     fontFamily: FONTS.regular,
     fontSize: 12,
-    color: COLORS.textLight,
     marginTop: 4,
   },
 });

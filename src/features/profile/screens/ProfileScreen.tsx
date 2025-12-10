@@ -3,7 +3,8 @@ import {
   Alert,
   Dimensions,
   FlatList, 
-  Image, 
+  Image,
+  Modal,
   ScrollView, 
   StyleSheet, 
   Text, 
@@ -16,14 +17,17 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { useTheme } from '@/app/providers/ThemeProvider';
 import { useFavoriteRecipes } from '@/features/recipes/hooks/useFavoriteRecipes';
 import ProfileSkeleton from '@/shared/components/ProfileSkeleton';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import { useUserProfile } from '../hooks/useUserProfile';
 import LanguageSelector from '../components/LanguageSelector';
+import ThemeSelector from '../components/ThemeSelector';
+import { useColors } from '@/shared/hooks/useColors';
 import { getCurrentLanguageInfo } from '@/i18n/languageService';
 import { logoutUser } from '@/features/auth/services/authService';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
 import type { FavoriteRecipeDoc } from '@/features/recipes/services/favoriteService';
 
@@ -40,10 +44,14 @@ type TabType = 'saved' | 'published' | 'info';
 const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+  const colors = useColors();
   const { favorites, loading } = useFavoriteRecipes();
   const { profile } = useUserProfile(user?.uid);
   const [activeTab, setActiveTab] = useState<TabType>('saved');
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const handleRecipePress = (recipeId: number) => {
     navigation.navigate('Info', { id: recipeId });
@@ -67,18 +75,34 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
   };
 
   const handleSettingsPress = () => {
-    setShowLanguageSelector(true);
+    setShowSettingsModal(true);
+  };
+
+  const getThemeIcon = (): keyof typeof Ionicons.glyphMap => {
+    switch (themeMode) {
+      case 'light': return 'sunny';
+      case 'dark': return 'moon';
+      default: return 'phone-portrait-outline';
+    }
+  };
+
+  const getThemeLabel = (): string => {
+    switch (themeMode) {
+      case 'light': return t('settings.lightMode');
+      case 'dark': return t('settings.darkMode');
+      default: return t('settings.autoMode');
+    }
   };
 
   const renderRecipeCard = ({ item }: { item: FavoriteRecipeDoc }) => (
     <AnimatedPressable onPress={() => handleRecipePress(item.id)} style={styles.recipeCard} scaleValue={0.96}>
       <View style={styles.recipeImageContainer}>
         <Image source={{ uri: item.url }} style={styles.recipeImage} />
-        <View style={styles.heartBadge}>
-          <Ionicons name="heart" size={14} color={COLORS.primary} />
+        <View style={[styles.heartBadge, { backgroundColor: colors.background }]}>
+          <Ionicons name="heart" size={14} color={colors.primary} />
         </View>
       </View>
-      <Text style={styles.recipeTitle} numberOfLines={1}>
+      <Text style={[styles.recipeTitle, { color: colors.text }]} numberOfLines={1}>
         {t('recipe.savedRecipe')}
       </Text>
     </AnimatedPressable>
@@ -89,92 +113,92 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.tertiary }]}>
         <AnimatedPressable style={styles.headerButton} onPress={handleLogout} scaleValue={0.85}>
-          <Ionicons name="log-out-outline" size={24} color={COLORS.text} />
+          <Ionicons name="log-out-outline" size={24} color={colors.text} />
         </AnimatedPressable>
-        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('profile.title')}</Text>
         <AnimatedPressable style={styles.headerButton} onPress={handleSettingsPress} scaleValue={0.85}>
-          <Ionicons name="settings-outline" size={24} color={COLORS.text} />
+          <Ionicons name="settings-outline" size={24} color={colors.text} />
         </AnimatedPressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
+        <View style={[styles.profileSection, { backgroundColor: colors.tertiary }]}>
+          <View style={[styles.avatarContainer, { borderColor: colors.primary, backgroundColor: colors.background }]}>
             <Image 
               style={styles.avatar} 
               source={require('@assets/user.jpg')} 
             />
           </View>
           
-          <Text style={styles.username}>
+          <Text style={[styles.username, { color: colors.text }]}>
             {profile?.username || profile?.name || t('profile.anonymous')}
           </Text>
           
-          <Text style={styles.bio}>
+          <Text style={[styles.bio, { color: colors.textLight }]}>
             {profile?.bio || t('profile.defaultBio')}
           </Text>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>1.2k</Text>
-              <Text style={styles.statLabel}>{t('profile.followers')}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>1.2k</Text>
+              <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.followers')}</Text>
             </View>
-            <View style={styles.statDivider} />
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>450</Text>
-              <Text style={styles.statLabel}>{t('profile.following')}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>450</Text>
+              <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.following')}</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, { backgroundColor: colors.tertiary }]}>
           <AnimatedPressable
             style={styles.tab}
-            pressableStyle={[styles.tabPressable, activeTab === 'saved' && styles.activeTab]}
+            pressableStyle={[styles.tabPressable, activeTab === 'saved' && { backgroundColor: colors.primary }]}
             onPress={() => setActiveTab('saved')}
             scaleValue={0.92}
           >
             <Ionicons 
               name="heart" 
               size={18} 
-              color={activeTab === 'saved' ? COLORS.background : COLORS.textLight} 
+              color={activeTab === 'saved' ? colors.background : colors.textLight} 
             />
-            <Text style={[styles.tabText, activeTab === 'saved' && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: activeTab === 'saved' ? colors.background : colors.textLight }]}>
               {t('profile.saved')}
             </Text>
           </AnimatedPressable>
           
           <AnimatedPressable
             style={styles.tab}
-            pressableStyle={[styles.tabPressable, activeTab === 'published' && styles.activeTab]}
+            pressableStyle={[styles.tabPressable, activeTab === 'published' && { backgroundColor: colors.primary }]}
             onPress={() => setActiveTab('published')}
             scaleValue={0.92}
           >
             <Ionicons 
               name="restaurant-outline" 
               size={18} 
-              color={activeTab === 'published' ? COLORS.background : COLORS.textLight} 
+              color={activeTab === 'published' ? colors.background : colors.textLight} 
             />
-            <Text style={[styles.tabText, activeTab === 'published' && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: activeTab === 'published' ? colors.background : colors.textLight }]}>
               {t('profile.published')}
             </Text>
           </AnimatedPressable>
           
           <AnimatedPressable
             style={styles.tab}
-            pressableStyle={[styles.tabPressable, activeTab === 'info' && styles.activeTab]}
+            pressableStyle={[styles.tabPressable, activeTab === 'info' && { backgroundColor: colors.primary }]}
             onPress={() => setActiveTab('info')}
             scaleValue={0.92}
           >
             <Ionicons 
               name="person-outline" 
               size={18} 
-              color={activeTab === 'info' ? COLORS.background : COLORS.textLight} 
+              color={activeTab === 'info' ? colors.background : colors.textLight} 
             />
-            <Text style={[styles.tabText, activeTab === 'info' && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: activeTab === 'info' ? colors.background : colors.textLight }]}>
               {t('profile.info')}
             </Text>
           </AnimatedPressable>
@@ -189,10 +213,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
                 style={styles.recipeCard}
                 scaleValue={0.96}
               >
-                <View style={styles.recipeImageContainer}>
+                <View style={[styles.recipeImageContainer, { backgroundColor: colors.tertiary }]}>
                   <Image source={{ uri: item.url }} style={styles.recipeImage} />
-                  <View style={styles.heartBadge}>
-                    <Ionicons name="heart" size={14} color={COLORS.primary} />
+                  <View style={[styles.heartBadge, { backgroundColor: colors.background }]}>
+                    <Ionicons name="heart" size={14} color={colors.primary} />
                   </View>
                 </View>
               </AnimatedPressable>
@@ -202,28 +226,105 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
 
         {activeTab === 'published' && (
           <View style={styles.emptyState}>
-            <Ionicons name="restaurant-outline" size={48} color={COLORS.border} />
-            <Text style={styles.emptyText}>{t('profile.noPublished')}</Text>
+            <Ionicons name="restaurant-outline" size={48} color={colors.border} />
+            <Text style={[styles.emptyText, { color: colors.textLight }]}>{t('profile.noPublished')}</Text>
           </View>
         )}
 
         {activeTab === 'info' && (
           <View style={styles.infoSection}>
-            <View style={styles.infoRow}>
-              <Ionicons name="mail-outline" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>{user?.email || 'No email'}</Text>
+            <View style={[styles.infoRow, { backgroundColor: colors.tertiary }]}>
+              <Ionicons name="mail-outline" size={20} color={colors.primary} />
+              <Text style={[styles.infoText, { color: colors.text }]}>{user?.email || 'No email'}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>{t('profile.memberSince')}</Text>
+            <View style={[styles.infoRow, { backgroundColor: colors.tertiary }]}>
+              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+              <Text style={[styles.infoText, { color: colors.text }]}>{t('profile.memberSince')}</Text>
             </View>
           </View>
         )}
       </ScrollView>
 
+      <Modal
+        visible={showSettingsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <View style={styles.settingsOverlay}>
+          <View style={[styles.settingsModal, { backgroundColor: colors.background }]}>
+            <View style={styles.settingsHeader}>
+              <View style={[styles.settingsIconContainer, { backgroundColor: colors.tertiary }]}>
+                <Ionicons name="settings-outline" size={32} color={colors.primary} />
+              </View>
+              <Text style={[styles.settingsTitle, { color: colors.text }]}>{t('settings.title')}</Text>
+            </View>
+
+            <View style={styles.settingsOptions}>
+              <AnimatedPressable
+                style={[styles.settingsOption, { backgroundColor: colors.tertiary }]}
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  setTimeout(() => setShowLanguageSelector(true), 300);
+                }}
+                scaleValue={0.96}
+              >
+                <View style={styles.settingsOptionContent}>
+                  <View style={[styles.settingsOptionIcon, { backgroundColor: colors.background }]}>
+                    <Ionicons name="language" size={22} color={colors.primary} />
+                  </View>
+                  <View style={styles.settingsOptionTextContainer}>
+                    <Text style={[styles.settingsOptionTitle, { color: colors.text }]}>{t('settings.language')}</Text>
+                    <Text style={[styles.settingsOptionValue, { color: colors.textLight }]}>
+                      {getCurrentLanguageInfo()?.nativeName || 'English'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+                </View>
+              </AnimatedPressable>
+
+              <AnimatedPressable
+                style={[styles.settingsOption, { backgroundColor: colors.tertiary }]}
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  setTimeout(() => setShowThemeSelector(true), 300);
+                }}
+                scaleValue={0.96}
+              >
+                <View style={styles.settingsOptionContent}>
+                  <View style={[styles.settingsOptionIcon, { backgroundColor: colors.background }]}>
+                    <Ionicons name={getThemeIcon()} size={22} color={colors.primary} />
+                  </View>
+                  <View style={styles.settingsOptionTextContainer}>
+                    <Text style={[styles.settingsOptionTitle, { color: colors.text }]}>{t('settings.appearance')}</Text>
+                    <Text style={[styles.settingsOptionValue, { color: colors.textLight }]}>
+                      {getThemeLabel()}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+                </View>
+              </AnimatedPressable>
+            </View>
+
+            <AnimatedPressable
+              style={styles.settingsCloseButton}
+              onPress={() => setShowSettingsModal(false)}
+              scaleValue={0.96}
+            >
+              <Text style={[styles.settingsCloseText, { color: colors.textLight }]}>{t('common.close')}</Text>
+            </AnimatedPressable>
+          </View>
+        </View>
+      </Modal>
+
       <LanguageSelector
         visible={showLanguageSelector}
         onClose={() => setShowLanguageSelector(false)}
+      />
+
+      <ThemeSelector
+        visible={showThemeSelector}
+        onClose={() => setShowThemeSelector(false)}
       />
     </View>
   );
@@ -232,7 +333,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
@@ -241,7 +341,6 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: COLORS.tertiary,
   },
   headerButton: {
     width: 40,
@@ -252,12 +351,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: FONTS.medium,
     fontSize: 18,
-    color: COLORS.text,
   },
   profileSection: {
     alignItems: 'center',
     paddingVertical: 24,
-    backgroundColor: COLORS.tertiary,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
@@ -266,9 +363,7 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 3,
-    borderColor: COLORS.primary,
     padding: 3,
-    backgroundColor: COLORS.background,
   },
   avatar: {
     width: '100%',
@@ -278,13 +373,11 @@ const styles = StyleSheet.create({
   username: {
     fontFamily: FONTS.bold,
     fontSize: 22,
-    color: COLORS.text,
     marginTop: 12,
   },
   bio: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.textLight,
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 40,
@@ -301,24 +394,20 @@ const styles = StyleSheet.create({
   statValue: {
     fontFamily: FONTS.bold,
     fontSize: 18,
-    color: COLORS.text,
   },
   statLabel: {
     fontFamily: FONTS.regular,
     fontSize: 13,
-    color: COLORS.textLight,
     marginTop: 2,
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: COLORS.border,
   },
   tabsContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 20,
-    backgroundColor: COLORS.tertiary,
     borderRadius: 25,
     padding: 4,
   },
@@ -334,16 +423,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 22,
   },
-  activeTab: {
-    backgroundColor: COLORS.primary,
-  },
   tabText: {
     fontFamily: FONTS.medium,
     fontSize: 13,
-    color: COLORS.textLight,
-  },
-  activeTabText: {
-    color: COLORS.background,
   },
   recipesGrid: {
     flexDirection: 'row',
@@ -360,8 +442,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: COLORS.tertiary,
-
   },
   recipeImage: {
     width: '100%',
@@ -374,7 +454,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -386,7 +465,6 @@ const styles = StyleSheet.create({
   recipeTitle: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.text,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -398,7 +476,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.textLight,
     marginTop: 12,
   },
   infoSection: {
@@ -410,13 +487,80 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 16,
-    backgroundColor: COLORS.tertiary,
     borderRadius: 12,
   },
   infoText: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.text,
+  },
+  settingsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsModal: {
+    width: '85%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 24,
+  },
+  settingsHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  settingsIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  settingsTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+  },
+  settingsOptions: {
+    gap: 12,
+  },
+  settingsOption: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  settingsOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 16,
+  },
+  settingsOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsOptionTextContainer: {
+    flex: 1,
+  },
+  settingsOptionTitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 16,
+  },
+  settingsOptionValue: {
+    fontFamily: FONTS.regular,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  settingsCloseButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  settingsCloseText: {
+    fontFamily: FONTS.medium,
+    fontSize: 15,
   },
 });
 

@@ -17,6 +17,14 @@
     "capture": "Capture",
     "saving": "Saving..."
   },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "appearance": "Appearance",
+    "lightMode": "Light",
+    "darkMode": "Dark",
+    "autoMode": "Auto"
+  },
   "auth": {
     "login": "Log In",
     "signUp": "Sign Up",
@@ -109,6 +117,13 @@
     "languageDownloadError": "Failed to download language. Using English.",
     "languageHint": "Languages are downloaded when selected to save space.",
     "logoutConfirm": "Are you sure you want to log out?",
+    "selectTheme": "Select Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeAuto": "Auto",
+    "themeHint": "Auto will follow your device settings.",
+    "language": "Language",
+    "theme": "Theme",
     "followers": "Followers",
     "following": "Following",
     "defaultBio": "Food explorer. Lover of tacos and desserts. #FoodieLife",

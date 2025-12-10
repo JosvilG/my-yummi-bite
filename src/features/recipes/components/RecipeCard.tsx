@@ -9,7 +9,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import type { RecipeSummary } from '../services/spoonacularService';
 import type { MainStackParamList } from '@/types/navigation';
@@ -36,6 +37,7 @@ interface Props {
 
 const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave }) => {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const colors = useColors();
 
   if (!recipe) {
     return null;
@@ -51,42 +53,42 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.background }]}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: imageSource }} style={styles.recipeImage} />
         </View>
 
         <View style={styles.infoContainer}>
-          <Text numberOfLines={2} style={styles.title}>{recipe.title}</Text>
-          <Text style={styles.calories}>{calories} kcal</Text>
+          <Text numberOfLines={2} style={[styles.title, { color: colors.primary }]}>{recipe.title}</Text>
+          <Text style={[styles.calories, { color: colors.accent }]}>{calories} kcal</Text>
           
-          <Text numberOfLines={4} style={styles.summary}>
+          <Text numberOfLines={4} style={[styles.summary, { color: colors.textLight }]}>
             {summary}
           </Text>
 
           <View style={styles.actions}>
             <AnimatedPressable 
-              style={[styles.actionButton, styles.skipButton]} 
+              style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.error }]} 
               onPress={onSkip}
               scaleValue={0.85}
             >
-              <Ionicons name="close" size={28} color={COLORS.error} />
+              <Ionicons name="close" size={28} color={colors.error} />
             </AnimatedPressable>
             
             <AnimatedPressable 
-              style={[styles.actionButton, styles.infoButton]} 
+              style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.teal }]} 
               onPress={handleInfoPress}
               scaleValue={0.85}
             >
-              <Ionicons name="information" size={24} color={COLORS.teal} />
+              <Ionicons name="information" size={24} color={colors.teal} />
             </AnimatedPressable>
             
             <AnimatedPressable 
-              style={[styles.actionButton, styles.saveButton]} 
+              style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.teal }]} 
               onPress={onSave}
               scaleValue={0.85}
             >
-              <Ionicons name="heart" size={28} color={COLORS.teal} />
+              <Ionicons name="heart" size={28} color={colors.teal} />
             </AnimatedPressable>
           </View>
         </View>
@@ -104,7 +106,6 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    backgroundColor: COLORS.background,
     borderRadius: 24,
     overflow: 'hidden',
     elevation: 8,
@@ -131,19 +132,16 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: FONTS.bold,
     fontSize: 24,
-    color: COLORS.primary,
     textAlign: 'center',
   },
   calories: {
     fontFamily: FONTS.medium,
     fontSize: 15,
-    color: COLORS.accent,
     marginTop: 4,
   },
   summary: {
     fontFamily: FONTS.regular,
     fontSize: 13,
-    color: COLORS.textLight,
     textAlign: 'center',
     marginTop: 12,
     lineHeight: 18,
@@ -160,7 +158,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: COLORS.background,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
@@ -168,18 +166,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-  },
-  skipButton: {
-    borderWidth: 2,
-    borderColor: COLORS.error,
-  },
-  infoButton: {
-    borderWidth: 2,
-    borderColor: COLORS.teal,
-  },
-  saveButton: {
-    borderWidth: 2,
-    borderColor: COLORS.teal,
   },
 });
 

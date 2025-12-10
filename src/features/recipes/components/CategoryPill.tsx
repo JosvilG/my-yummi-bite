@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 interface Props {
   label: string;
@@ -10,16 +11,32 @@ interface Props {
 }
 
 const CategoryPill: React.FC<Props> = ({ label, selected = false, onSelect, onDelete }: Props) => {
+  const colors = useColors();
+
   return (
     <View style={styles.wrapper}>
-      <Pressable onPress={() => onSelect?.(label)} style={[styles.pill, selected && styles.pillSelected]}>
-        <Text numberOfLines={1} style={[styles.text, selected && styles.textSelected]}>
+      <Pressable 
+        onPress={() => onSelect?.(label)} 
+        style={[
+          styles.pill, 
+          { backgroundColor: colors.background, borderColor: colors.primary },
+          selected && { backgroundColor: colors.secondary }
+        ]}
+      >
+        <Text 
+          numberOfLines={1} 
+          style={[
+            styles.text, 
+            { color: colors.primary },
+            selected && { color: colors.background }
+          ]}
+        >
           {label}
         </Text>
       </Pressable>
       {onDelete ? (
-        <Pressable style={styles.delete} onPress={onDelete} hitSlop={10}>
-          <Text style={styles.deleteText}>×</Text>
+        <Pressable style={[styles.delete, { backgroundColor: colors.text }]} onPress={onDelete} hitSlop={10}>
+          <Text style={[styles.deleteText, { color: colors.background }]}>×</Text>
         </Pressable>
       ) : null}
     </View>
@@ -37,23 +54,14 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.background,
     borderWidth: 2,
-    borderColor: COLORS.primary,
     padding: 8,
-  },
-  pillSelected: {
-    backgroundColor: COLORS.secondary,
   },
   text: {
     fontFamily: FONTS.bold,
     textAlign: 'center',
     textTransform: 'uppercase',
-    color: COLORS.primary,
     fontSize: 13,
-  },
-  textSelected: {
-    color: COLORS.background,
   },
   delete: {
     position: 'absolute',
@@ -62,12 +70,10 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.text,
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteText: {
-    color: COLORS.background,
     fontFamily: FONTS.bold,
     fontSize: 16,
   },

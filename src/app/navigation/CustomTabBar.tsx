@@ -3,7 +3,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { COLORS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -64,10 +64,14 @@ const TabButton: React.FC<TabButtonProps> = ({ isFocused, iconName, iconColor, o
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-      <View style={styles.tabBar}>
+      <View style={[
+        styles.tabBar, 
+        { backgroundColor: colors.background, borderColor: colors.tertiary }
+      ]}>
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
           const tabConfig = TAB_CONFIG.find(t => t.route === route.name);
@@ -75,7 +79,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
           if (!tabConfig) return null;
 
           const iconName = isFocused ? tabConfig.iconFilled : tabConfig.iconOutline;
-          const iconColor = isFocused ? COLORS.primary : COLORS.textLight;
+          const iconColor = isFocused ? colors.primary : colors.textLight;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -119,7 +123,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: COLORS.background,
     borderRadius: 28,
     paddingHorizontal: 24,
     shadowColor: '#000',
@@ -128,7 +131,6 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 12,
     borderWidth: 1,
-    borderColor: COLORS.tertiary,
   },
   tabButton: {
     flex: 1,

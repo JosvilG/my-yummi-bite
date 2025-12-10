@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 interface IngredientItem {
   id: number;
@@ -16,19 +17,20 @@ interface Props {
 }
 
 const IngredientCard: React.FC<{ item: IngredientItem }> = ({ item }) => {
+  const colors = useColors();
   const amount = item?.measures?.metric?.amount ?? item?.amount ?? '';
   const unit = item?.measures?.metric?.unitShort ?? item?.unit ?? '';
 
   return (
     <View style={styles.ingredient}>
       <Image
-        style={styles.image}
+        style={[styles.image, { backgroundColor: colors.background }]}
         source={{ uri: `https://spoonacular.com/cdn/ingredients_100x100/${item?.image}` }}
       />
-      <Text numberOfLines={2} style={styles.name}>
+      <Text numberOfLines={2} style={[styles.name, { color: colors.background }]}>
         {item?.name}
       </Text>
-      <Text style={styles.amount}>
+      <Text style={[styles.amount, { color: colors.background }]}>
         {amount} {unit}
       </Text>
     </View>
@@ -36,9 +38,11 @@ const IngredientCard: React.FC<{ item: IngredientItem }> = ({ item }) => {
 };
 
 const Ingredients: React.FC<Props> = ({ extendedIngredients = [] }) => {
+  const colors = useColors();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Ingredients</Text>
+      <Text style={[styles.title, { color: colors.background }]}>Ingredients</Text>
       <FlatList
         data={extendedIngredients}
         keyExtractor={item => String(item.id)}
@@ -60,7 +64,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: FONTS.bold,
     fontSize: 20,
-    color: COLORS.background,
     marginBottom: 12,
   },
   list: {
@@ -76,18 +79,15 @@ const styles = StyleSheet.create({
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
     borderRadius: IMAGE_SIZE / 2,
-    backgroundColor: COLORS.background,
     marginBottom: 8,
   },
   name: {
     fontFamily: FONTS.medium,
-    color: COLORS.background,
     textAlign: 'center',
     fontSize: 13,
   },
   amount: {
     fontFamily: FONTS.bold,
-    color: COLORS.background,
     marginTop: 4,
     fontSize: 12,
   },

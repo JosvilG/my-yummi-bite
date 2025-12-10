@@ -1,6 +1,7 @@
 import React from 'react';
 import { RecipeProvider } from './RecipeProvider';
 import { AuthProvider } from './AuthProvider';
+import { ThemeProvider } from './ThemeProvider';
 
 interface Props {
   children: React.ReactNode;
@@ -8,9 +9,11 @@ interface Props {
 
 const AppProviders: React.FC<Props> = ({ children }) => {
   return (
-    <AuthProvider>
-      <RecipeProvider>{children}</RecipeProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RecipeProvider>{children}</RecipeProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
-import { COLORS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 interface SkeletonProps {
   width?: DimensionValue;
@@ -15,6 +15,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
   borderRadius = 8,
   style,
 }) => {
+  const colors = useColors();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -47,6 +48,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
       style={[
         styles.skeleton,
         {
+          backgroundColor: colors.secondary,
           width: width as DimensionValue,
           height: height as DimensionValue,
           borderRadius,
@@ -59,9 +61,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
 };
 
 const styles = StyleSheet.create({
-  skeleton: {
-    backgroundColor: COLORS.secondary,
-  },
+  skeleton: {},
 });
 
 export default Skeleton;

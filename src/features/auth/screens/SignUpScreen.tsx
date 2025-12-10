@@ -18,7 +18,8 @@ import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import SignUpBG from '@/shared/icons/signUpBG';
 import ReturnHeaderButton from '@/shared/components/ReturnHeaderButton';
 import { registerUser } from '../services/authService';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import type { AuthStackParamList } from '@/types/navigation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -27,6 +28,7 @@ export type SignUpScreenProps = NativeStackScreenProps<AuthStackParamList, 'Sign
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
+  const colors = useColors();
   const [userName, setUserName] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -60,7 +62,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.wrapper} edges={['top']}>
+    <SafeAreaView style={[styles.wrapper, { backgroundColor: colors.primary }]} edges={['top']}>
       <SignUpBG style={styles.background} />
       
       <KeyboardAvoidingView
@@ -76,13 +78,13 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
           <ReturnHeaderButton style={styles.returnButton} onPress={() => navigation.goBack()} />
           
           <View style={styles.container}>
-            <Title color={COLORS.background}>{t('auth.signUp')}</Title>
+            <Title color={colors.text}>{t('auth.signUp')}</Title>
             
             <View style={styles.formContainer}>
               <TextInput
                 placeholder={t('auth.userName')}
                 placeholderTextColor="rgba(255,255,255,0.7)"
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.background }]}
                 value={userName}
                 onChangeText={setUserName}
                 autoCapitalize="none"
@@ -90,14 +92,14 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
               <TextInput
                 placeholder={t('auth.fullName')}
                 placeholderTextColor="rgba(255,255,255,0.7)"
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.background }]}
                 value={fullName}
                 onChangeText={setFullName}
               />
               <TextInput
                 placeholder={t('auth.email')}
                 placeholderTextColor="rgba(255,255,255,0.7)"
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.background }]}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -107,7 +109,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
               <TextInput
                 placeholder={t('auth.password')}
                 placeholderTextColor="rgba(255,255,255,0.7)"
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.background }]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -116,7 +118,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
               <TextInput
                 placeholder={t('auth.repeatPassword')}
                 placeholderTextColor="rgba(255,255,255,0.7)"
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.background }]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
@@ -124,12 +126,12 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
               />
               
               <AnimatedPressable
-                style={styles.confirmBtn}
+                style={[styles.confirmBtn, { backgroundColor: colors.text }]}
                 onPress={handleSignUp}
                 disabled={loading}
                 scaleValue={0.96}
               >
-                <Text style={styles.buttonText}>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>
                   {loading ? t('common.loading') : t('common.confirm')}
                 </Text>
               </AnimatedPressable>
@@ -144,7 +146,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: COLORS.primary,
   },
   keyboardView: {
     flex: 1,
@@ -184,12 +185,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 12,
     marginBottom: 24,
-    color: COLORS.background,
     fontSize: 16,
     fontFamily: FONTS.regular,
   },
   confirmBtn: {
-    backgroundColor: COLORS.background,
     minHeight: 50,
     borderRadius: 25,
     paddingHorizontal: 60,
@@ -206,7 +205,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     textAlign: 'center',
     fontSize: 14,
-    color: COLORS.primary,
   },
 });
 

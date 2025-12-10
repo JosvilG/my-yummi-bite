@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import CrossIcon from '@/shared/icons/cross';
 import VerifyIcon from '@/shared/icons/verify';
-import { COLORS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 type Variant = 'accept' | 'reject';
 
@@ -13,6 +13,7 @@ interface Props {
 }
 
 const VerifyButton: React.FC<Props> = ({ variant = 'accept', size = 64, onPress }: Props) => {
+  const colors = useColors();
   const isAccept = variant === 'accept';
 
   return (
@@ -21,7 +22,7 @@ const VerifyButton: React.FC<Props> = ({ variant = 'accept', size = 64, onPress 
       style={[
         styles.circle,
         { width: size, height: size, borderRadius: size / 2 },
-        isAccept ? styles.accept : styles.reject,
+        { borderWidth: 2, borderColor: isAccept ? colors.success : colors.error },
       ]}
       hitSlop={10}
     >
@@ -36,14 +37,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     backgroundColor: 'rgba(255,255,255,0.9)',
-  },
-  accept: {
-    borderWidth: 2,
-    borderColor: COLORS.success,
-  },
-  reject: {
-    borderWidth: 2,
-    borderColor: COLORS.error,
   },
 });
 

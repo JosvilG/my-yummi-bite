@@ -11,7 +11,8 @@ import RecipeCardSkeleton from '@/shared/components/RecipeCardSkeleton';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import { saveFavoriteRecipe } from '../services/favoriteService';
 import { MEAL_TYPES } from '@/constants/recipe';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import type { RecipeSummary } from '../services/spoonacularService';
 
 const { width, height } = Dimensions.get('window');
@@ -25,19 +26,23 @@ interface MealTypePillProps {
   label: string;
   selected: boolean;
   onPress: () => void;
+  colors: ReturnType<typeof useColors>;
 }
 
-const MealTypePill: React.FC<MealTypePillProps> = ({ label, selected, onPress }) => {
+const MealTypePill: React.FC<MealTypePillProps> = ({ label, selected, onPress, colors }) => {
   const { t } = useTranslation();
   const translatedLabel = t(getMealTypeTranslationKey(label), { defaultValue: label });
   
   return (
     <AnimatedPressable
       onPress={onPress}
-      style={[styles.mealTypeChip, selected && styles.mealTypeChipSelected]}
+      style={[
+        styles.mealTypeChip,
+        { backgroundColor: selected ? colors.primary : colors.background, borderColor: selected ? colors.primary : colors.border },
+      ]}
       scaleValue={0.92}
     >
-      <Text style={[styles.mealTypeText, selected && styles.mealTypeTextSelected]}>
+      <Text style={[styles.mealTypeText, { color: selected ? colors.background : colors.text }]}>
         {translatedLabel}
       </Text>
     </AnimatedPressable>
@@ -48,6 +53,7 @@ const HomeScreen: React.FC = observer(() => {
   const { t } = useTranslation();
   const recipeStore = useRecipeStore();
   const { user } = useAuth();
+  const colors = useColors();
   const swiperRef = useRef<Swiper<RecipeSummary>>(null);
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null);
   const recipes = recipeStore.randomRecipe ?? [];
@@ -101,7 +107,7 @@ const HomeScreen: React.FC = observer(() => {
   const isLoading = recipeStore.loading || recipes.length === 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.tertiary }]} edges={['top']}>
       <View style={styles.filtersContainer}>
         <ScrollView 
           horizontal 
@@ -111,7 +117,10 @@ const HomeScreen: React.FC = observer(() => {
           <AnimatedPressable
             style={[
               styles.mealTypeChip,
-              !selectedMealType && styles.mealTypeChipSelected,
+              { 
+                backgroundColor: !selectedMealType ? colors.primary : colors.background,
+                borderColor: !selectedMealType ? colors.primary : colors.border,
+              },
             ]}
             onPress={() => {
               setSelectedMealType(null);
@@ -123,7 +132,7 @@ const HomeScreen: React.FC = observer(() => {
             <Text
               style={[
                 styles.mealTypeText,
-                !selectedMealType && styles.mealTypeTextSelected,
+                { color: !selectedMealType ? colors.background : colors.text },
               ]}
             >
               {t('favorites.all')}
@@ -135,6 +144,7 @@ const HomeScreen: React.FC = observer(() => {
               label={mealType}
               selected={selectedMealType === mealType}
               onPress={() => handleSelectMealType(mealType)}
+              colors={colors}
             />
           ))}
         </ScrollView>
@@ -143,7 +153,7 @@ const HomeScreen: React.FC = observer(() => {
       {isLoading ? (
         <View style={styles.loader}>
           <RecipeCardSkeleton />
-          <Text style={styles.loaderText}>{t('home.discovering')}</Text>
+          <Text style={[styles.loaderText, { color: colors.textLight }]}>{t('home.discovering')}</Text>
         </View>
       ) : (
         <View style={styles.swiperContainer}>
@@ -171,8 +181,8 @@ const HomeScreen: React.FC = observer(() => {
                   title: t('home.skip'),
                   style: {
                     label: {
-                      backgroundColor: COLORS.error,
-                      color: COLORS.background,
+                      backgroundColor: colors.error,
+                      color: colors.background,
                       fontSize: 24,
                       fontFamily: FONTS.bold,
                       borderRadius: 100,
@@ -191,8 +201,8 @@ const HomeScreen: React.FC = observer(() => {
                   title: t('home.save'),
                   style: {
                     label: {
-                      backgroundColor: COLORS.success,
-                      color: COLORS.background,
+                      backgroundColor: colors.success,
+                      color: colors.background,
                       fontSize: 24,
                       fontFamily: FONTS.bold,
                       borderRadius: 100,
@@ -219,7 +229,6 @@ const HomeScreen: React.FC = observer(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.tertiary,
   },
   filtersContainer: {
     paddingTop: 40,
@@ -234,21 +243,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  mealTypeChipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   mealTypeText: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.text,
-  },
-  mealTypeTextSelected: {
-    color: COLORS.background,
   },
   loader: {
     flex: 1,
@@ -258,7 +257,6 @@ const styles = StyleSheet.create({
   loaderText: {
     marginTop: 16,
     fontFamily: FONTS.medium,
-    color: COLORS.textLight,
   },
   swiperContainer: {
     flex: 1,

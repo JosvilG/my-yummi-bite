@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, StyleSheet, TextStyle } from 'react-native';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 
 interface Props {
   children?: React.ReactNode;
@@ -8,8 +9,11 @@ interface Props {
   style?: TextStyle;
 }
 
-const Title: React.FC<Props> = ({ children, color = COLORS.background, style }) => {
-  return <Text style={[styles.title, { color }, style]}>{children}</Text>;
+const Title: React.FC<Props> = ({ children, color, style }) => {
+  const colors = useColors();
+  const textColor = color ?? colors.background;
+
+  return <Text style={[styles.title, { color: textColor }, style]}>{children}</Text>;
 };
 
 const styles = StyleSheet.create({

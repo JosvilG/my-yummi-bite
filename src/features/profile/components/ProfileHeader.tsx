@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS } from '@/constants/theme';
+import { FONTS } from '@/constants/theme';
+import { useColors } from '@/shared/hooks/useColors';
 import type { UserProfile } from '../hooks/useUserProfile';
 import LanguageSelector from './LanguageSelector';
 import { getCurrentLanguageInfo } from '@/i18n/languageService';
@@ -15,6 +16,7 @@ interface Props {
 
 const ProfileHeader: React.FC<Props> = ({ profile, savedCount }: Props) => {
   const { t } = useTranslation();
+  const colors = useColors();
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const currentLanguage = getCurrentLanguageInfo();
 
@@ -38,33 +40,33 @@ const ProfileHeader: React.FC<Props> = ({ profile, savedCount }: Props) => {
   return (
     <View style={styles.container}>
       <Pressable 
-        style={styles.logoutButton} 
+        style={[styles.logoutButton, { backgroundColor: colors.secondary }]} 
         onPress={handleLogout}
       >
-        <Ionicons name="log-out-outline" size={20} color={COLORS.textLight} />
+        <Ionicons name="log-out-outline" size={20} color={colors.textLight} />
       </Pressable>
 
       <Pressable 
-        style={styles.languageButton} 
+        style={[styles.languageButton, { backgroundColor: colors.primary }]} 
         onPress={() => setShowLanguageSelector(true)}
       >
-        <Ionicons name="globe-outline" size={18} color={COLORS.background} style={styles.languageIcon} />
-        <Text style={styles.languageButtonText}>
+        <Ionicons name="globe-outline" size={18} color={colors.background} style={styles.languageIcon} />
+        <Text style={[styles.languageButtonText, { color: colors.background }]}>
           {currentLanguage?.nativeName || 'English'}
         </Text>
       </Pressable>
 
-      <Image style={styles.avatar} source={require('@assets/user.jpg')} />
-      <Text style={styles.username}>{profile?.username || profile?.name || t('profile.anonymous')}</Text>
-      <Text style={styles.name}>{profile?.name || t('profile.foodLover')}</Text>
+      <Image style={[styles.avatar, { backgroundColor: colors.secondary }]} source={require('@assets/user.jpg')} />
+      <Text style={[styles.username, { color: colors.primary }]}>{profile?.username || profile?.name || t('profile.anonymous')}</Text>
+      <Text style={[styles.name, { color: colors.textLight }]}>{profile?.name || t('profile.foodLover')}</Text>
       <View style={styles.stats}>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{savedCount}</Text>
-          <Text style={styles.statLabel}>{t('profile.saved')}</Text>
+          <Text style={[styles.statValue, { color: colors.primary }]}>{savedCount}</Text>
+          <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.saved')}</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>0</Text>
-          <Text style={styles.statLabel}>{t('profile.posts')}</Text>
+          <Text style={[styles.statValue, { color: colors.primary }]}>0</Text>
+          <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.posts')}</Text>
         </View>
       </View>
 
@@ -87,13 +89,11 @@ const styles = StyleSheet.create({
     left: 16,
     padding: 10,
     borderRadius: 20,
-    backgroundColor: COLORS.secondary,
   },
   languageButton: {
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -103,7 +103,6 @@ const styles = StyleSheet.create({
   languageButtonText: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.background,
   },
   languageIcon: {
     marginRight: 6,
@@ -113,17 +112,14 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 55,
     marginBottom: 16,
-    backgroundColor: COLORS.secondary,
   },
   username: {
     fontFamily: FONTS.bold,
     fontSize: 22,
-    color: COLORS.primary,
   },
   name: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.textLight,
     marginTop: 4,
   },
   stats: {
@@ -137,11 +133,9 @@ const styles = StyleSheet.create({
   statValue: {
     fontFamily: FONTS.bold,
     fontSize: 20,
-    color: COLORS.primary,
   },
   statLabel: {
     fontFamily: FONTS.medium,
-    color: COLORS.textLight,
     fontSize: 12,
   },
 });
