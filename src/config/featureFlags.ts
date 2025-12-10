@@ -52,6 +52,13 @@ export const FeatureFlags = {
    * Maximum number of recipes to fetch per request.
    */
   MAX_RECIPES_PER_REQUEST: 5,
+
+  /**
+   * Default language for the app.
+   * Options: 'en', 'es'
+   * Set to 'auto' to use device language.
+   */
+  DEFAULT_LANGUAGE: 'auto' as 'en' | 'es' | 'auto',
 } as const;
 
 /**

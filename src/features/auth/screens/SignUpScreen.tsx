@@ -10,6 +10,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Title from '@/shared/components/Title';
 import SignUpBG from '@/shared/icons/signUpBG';
@@ -21,6 +22,7 @@ import type { AuthStackParamList } from '@/types/navigation';
 export type SignUpScreenProps = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [userName, setUserName] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -30,17 +32,17 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 
   const handleSignUp = async () => {
     if (!userName || !fullName || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.fillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('auth.passwordsNoMatch'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('common.error'), t('auth.passwordMinLength'));
       return;
     }
 
@@ -49,7 +51,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert('Registration Failed', result.error ?? 'Unknown error');
+      Alert.alert(t('auth.registrationFailed'), result.error ?? t('common.unknownError'));
     }
   };
 
@@ -63,9 +65,9 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.container}>
-          <Title color={COLORS.background}>Sign Up</Title>
+          <Title color={COLORS.background}>{t('auth.signUp')}</Title>
           <TextInput
-            placeholder="User Name"
+            placeholder={t('auth.userName')}
             placeholderTextColor="#fff"
             style={styles.textInput}
             value={userName}
@@ -73,14 +75,14 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
             autoCapitalize="none"
           />
           <TextInput
-            placeholder="Full Name"
+            placeholder={t('auth.fullName')}
             placeholderTextColor="#fff"
             style={styles.textInput}
             value={fullName}
             onChangeText={setFullName}
           />
           <TextInput
-            placeholder="Email"
+            placeholder={t('auth.email')}
             placeholderTextColor="#fff"
             style={styles.textInput}
             value={email}
@@ -90,7 +92,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
             autoCorrect={false}
           />
           <TextInput
-            placeholder="Password"
+            placeholder={t('auth.password')}
             placeholderTextColor="#fff"
             style={styles.textInput}
             value={password}
@@ -99,7 +101,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
             autoCapitalize="none"
           />
           <TextInput
-            placeholder="Repeat Password"
+            placeholder={t('auth.repeatPassword')}
             placeholderTextColor="#fff"
             style={styles.textInput}
             value={confirmPassword}
@@ -112,7 +114,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
             onPress={handleSignUp}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Confirm'}</Text>
+            <Text style={styles.buttonText}>{loading ? t('common.loading') : t('common.confirm')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

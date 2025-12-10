@@ -4,7 +4,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 716429,
     title: 'Pasta with Garlic, Scallions, Cauliflower & Breadcrumbs',
-    image: 'https://img.spoonacular.com/recipes/716429-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/716429-636x393.jpg',
     readyInMinutes: 45,
     servings: 2,
     summary:
@@ -36,7 +36,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 715538,
     title: 'Bruschetta Style Pork & Pasta',
-    image: 'https://img.spoonacular.com/recipes/715538-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/715538-636x393.jpg',
     readyInMinutes: 35,
     servings: 4,
     summary:
@@ -67,7 +67,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 715495,
     title: 'Turkey Tomato Cheese Pizza',
-    image: 'https://img.spoonacular.com/recipes/715495-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/715495-636x393.jpg',
     readyInMinutes: 30,
     servings: 6,
     summary: 'Turkey Tomato Cheese Pizza might be just the main course you are searching for.',
@@ -98,7 +98,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 716276,
     title: 'Doughnuts',
-    image: 'https://img.spoonacular.com/recipes/716276-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/716276-636x393.jpg',
     readyInMinutes: 60,
     servings: 12,
     summary: 'Homemade doughnuts are fluffy, sweet, and perfect for breakfast or dessert.',
@@ -129,7 +129,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 782601,
     title: 'Red Kidney Bean Jambalaya',
-    image: 'https://img.spoonacular.com/recipes/782601-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/782601-636x393.jpg',
     readyInMinutes: 45,
     servings: 6,
     summary: 'A spicy Cajun-inspired dish with red kidney beans, rice, and vegetables.',
@@ -159,7 +159,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 794349,
     title: 'Broccoli and Chickpea Rice Salad',
-    image: 'https://img.spoonacular.com/recipes/794349-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/794349-636x393.jpg',
     readyInMinutes: 25,
     servings: 4,
     summary: 'A healthy and refreshing salad with broccoli, chickpeas, and brown rice.',
@@ -189,7 +189,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 715446,
     title: 'Slow Cooker Beef Stew',
-    image: 'https://img.spoonacular.com/recipes/715446-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/715446-636x393.jpg',
     readyInMinutes: 480,
     servings: 8,
     summary: 'Hearty slow cooker beef stew with tender meat and vegetables.',
@@ -218,7 +218,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 640941,
     title: 'Crunchy Brussels Sprouts Side Dish',
-    image: 'https://img.spoonacular.com/recipes/640941-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/640941-636x393.jpg',
     readyInMinutes: 20,
     servings: 4,
     summary: 'Crispy roasted brussels sprouts with a delicious crunch.',
@@ -248,7 +248,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 663559,
     title: 'Tomato and Lentil Soup',
-    image: 'https://img.spoonacular.com/recipes/663559-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/663559-636x393.jpg',
     readyInMinutes: 40,
     servings: 6,
     summary: 'A warming and nutritious tomato lentil soup.',
@@ -278,7 +278,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   {
     id: 660306,
     title: 'Soba Noodle Salad',
-    image: 'https://img.spoonacular.com/recipes/660306-556x370.jpg',
+    image: 'https://img.spoonacular.com/recipes/660306-636x393.jpg',
     readyInMinutes: 25,
     servings: 4,
     summary: 'A refreshing Japanese-inspired soba noodle salad with sesame dressing.',

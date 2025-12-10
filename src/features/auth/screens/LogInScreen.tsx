@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import Title from '@/shared/components/Title';
 import LogInBackground from '@/shared/icons/loginBG';
 import { loginUser } from '../services/authService';
@@ -19,6 +20,7 @@ import type { AuthStackParamList } from '@/types/navigation';
 export type LogInScreenProps = NativeStackScreenProps<AuthStackParamList, 'LogIn'>;
 
 const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -48,7 +50,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
         <View style={styles.formContainer}>
           <Title color={COLORS.background}>My Yummi Bite</Title>
           <TextInput
-            placeholder="Email"
+            placeholder={t('auth.email')}
             placeholderTextColor="#fff"
             style={styles.textInput}
             value={email}
@@ -58,7 +60,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
             autoCorrect={false}
           />
           <TextInput
-            placeholder="Password"
+            placeholder={t('auth.password')}
             placeholderTextColor="#fff"
             style={styles.textInput}
             value={password}
@@ -67,14 +69,14 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
             autoCapitalize="none"
           />
           <TouchableOpacity style={styles.confirmBtn} onPress={handleLogIn} disabled={loading}>
-            <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Confirm'}</Text>
+            <Text style={styles.buttonText}>{loading ? t('common.loading') : t('common.confirm')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.signUpContainer}>
-          <Text>Don't you have an account yet?</Text>
+          <Text>{t('auth.noAccount')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.register}> Register</Text>
+            <Text style={styles.register}> {t('auth.signup')}</Text>
           </TouchableOpacity>
         </View>
       </View>

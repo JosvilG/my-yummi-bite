@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CameraView as ExpoCameraView, useCameraPermissions, type CameraType } from 'expo-camera';
+import { useTranslation } from 'react-i18next';
 import { COLORS, FONTS } from '@/constants/theme';
 
 const RecipeCameraView: React.FC = () => {
+  const { t } = useTranslation();
   const cameraRef = useRef<ExpoCameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -47,7 +49,7 @@ const RecipeCameraView: React.FC = () => {
   if (hasPermission === false) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.permissionText}>Camera access is required to capture recipes.</Text>
+        <Text style={styles.permissionText}>{t('common.cameraPermission')}</Text>
       </View>
     );
   }
@@ -57,10 +59,10 @@ const RecipeCameraView: React.FC = () => {
       <ExpoCameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing}>
         <View style={styles.overlay}>
           <TouchableOpacity style={styles.secondaryButton} onPress={handleFlipCamera}>
-            <Text style={styles.secondaryText}>Flip</Text>
+            <Text style={styles.secondaryText}>{t('common.flip')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.captureButton} onPress={handleCapture} disabled={isProcessing}>
-            <Text style={styles.captureText}>{isProcessing ? 'Saving...' : 'Capture'}</Text>
+            <Text style={styles.captureText}>{isProcessing ? t('common.saving') : t('common.capture')}</Text>
           </TouchableOpacity>
         </View>
       </ExpoCameraView>

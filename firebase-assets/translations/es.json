@@ -1,0 +1,101 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "unknownError": "Error desconocido",
+    "retry": "Reintentar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "yes": "Sí",
+    "no": "No",
+    "cameraPermission": "Se requiere acceso a la cámara para capturar recetas.",
+    "flip": "Voltear",
+    "capture": "Capturar",
+    "saving": "Guardando..."
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "logout": "Cerrar Sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "userName": "Nombre de usuario",
+    "fullName": "Nombre completo",
+    "repeatPassword": "Repetir Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "loginError": "Correo o contraseña inválidos",
+    "signupError": "No se pudo crear la cuenta",
+    "fillAllFields": "Por favor completa todos los campos",
+    "passwordsNoMatch": "Las contraseñas no coinciden",
+    "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+    "registrationFailed": "Registro fallido"
+  },
+  "home": {
+    "discovering": "Descubriendo nuevos platos...",
+    "skip": "SALTAR",
+    "save": "GUARDAR",
+    "noRecipes": "No se encontraron recetas",
+    "recipeNotFound": "Receta no encontrada",
+    "minutes": "min",
+    "servings": "porciones"
+  },
+  "recipe": {
+    "ingredients": "Ingredientes",
+    "directions": "Instrucciones",
+    "info": "Info",
+    "cuisines": "Cocinas",
+    "dishTypes": "Tipos de plato",
+    "step": "Paso {{number}}"
+  },
+  "favorites": {
+    "title": "Mis Recetas",
+    "empty": "Aún no tienes recetas guardadas. ¡Empieza a explorar!",
+    "emptyCategories": "Crea tu primera categoría para organizar recetas",
+    "newCategory": "Nueva Categoría",
+    "categoryPlaceholder": "ej. Pasta",
+    "create": "Crear",
+    "assignToCategory": "Asignar a categoría"
+  },
+  "profile": {
+    "title": "Perfil",
+    "favorites": "Favoritos",
+    "settings": "Ajustes",
+    "editProfile": "Editar Perfil",
+    "saved": "Guardados",
+    "posts": "Posts",
+    "anonymous": "Anónimo",
+    "foodLover": "Amante de la comida"
+  },
+  "camera": {
+    "permissionRequired": "Se requiere acceso a la cámara para capturar recetas.",
+    "flip": "Voltear",
+    "capture": "Capturar",
+    "saving": "Guardando..."
+  },
+  "filters": {
+    "mexican": "Mexicana",
+    "japanese": "Japonesa",
+    "american": "Americana",
+    "spanish": "Española",
+    "italian": "Italiana",
+    "chinese": "China",
+    "indian": "India",
+    "french": "Francesa",
+    "thai": "Tailandesa",
+    "mediterranean": "Mediterránea",
+    "african": "Africana",
+    "nordic": "Nórdica",
+    "greek": "Griega",
+    "irish": "Irlandesa",
+    "british": "Británica",
+    "latinamerican": "Latinoamericana",
+    "korean": "Coreana"
+  }
+}

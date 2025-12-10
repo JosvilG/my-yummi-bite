@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { observer } from 'mobx-react-lite';
+import { useTranslation } from 'react-i18next';
 import { useRecipeStore } from '@/app/providers/RecipeProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
 import FilterPill from '../components/FilterPill';
@@ -16,6 +17,7 @@ import type { RecipeSummary } from '../services/spoonacularService';
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen: React.FC = observer(() => {
+  const { t } = useTranslation();
   const recipeStore = useRecipeStore();
   const { user } = useAuth();
   const swiperRef = useRef<Swiper<RecipeSummary>>(null);
@@ -90,7 +92,7 @@ const HomeScreen: React.FC = observer(() => {
         {isLoading ? (
           <View style={styles.loader}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loaderText}>Discovering new dishes...</Text>
+            <Text style={styles.loaderText}>{t('home.discoveringDishes')}</Text>
           </View>
         ) : (
           <View style={styles.swiperContainer}>
@@ -115,7 +117,7 @@ const HomeScreen: React.FC = observer(() => {
               marginTop={0}
               overlayLabels={{
                 left: {
-                  title: 'SKIP',
+                  title: t('home.skip'),
                   style: {
                     label: {
                       backgroundColor: COLORS.error,
@@ -135,7 +137,7 @@ const HomeScreen: React.FC = observer(() => {
                   },
                 },
                 right: {
-                  title: 'SAVE',
+                  title: t('home.save'),
                   style: {
                     label: {
                       backgroundColor: COLORS.success,

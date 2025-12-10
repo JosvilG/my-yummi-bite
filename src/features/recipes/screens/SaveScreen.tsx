@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { observer } from 'mobx-react-lite';
+import { useTranslation } from 'react-i18next';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -37,6 +38,7 @@ type SaveScreenProps = CompositeScreenProps<
 >;
 
 const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const recipeStore = useRecipeStore();
   const { favorites, loading, removeFavorite } = useFavoriteRecipes();
@@ -91,7 +93,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
 
   const renderCategories = () => {
     if (categories.length === 0) {
-      return <Text style={styles.emptyCategories}>Create your first category to organize recipes</Text>;
+      return <Text style={styles.emptyCategories}>{t('favorites.emptyCategories')}</Text>;
     }
 
     return categories.map((category: UserCategory) => (
@@ -114,7 +116,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         renderItem={renderRecipe}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          !loading ? <Text style={styles.emptyState}>You have no saved recipes yet. Start exploring!</Text> : null
+          !loading ? <Text style={styles.emptyState}>{t('favorites.empty')}</Text> : null
         }
       />
 
@@ -130,19 +132,19 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
       <Modal transparent animationType="fade" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>New Category</Text>
+            <Text style={styles.modalTitle}>{t('favorites.newCategory')}</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="e.g. Pasta"
+              placeholder={t('favorites.categoryPlaceholder')}
               placeholderTextColor={COLORS.primary}
               value={categoryText}
               onChangeText={setCategoryText}
             />
             <TouchableOpacity style={styles.modalButton} onPress={handleAddCategory}>
-              <Text style={styles.modalButtonText}>Create</Text>
+              <Text style={styles.modalButtonText}>{t('favorites.create')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.modalCancel}>Cancel</Text>
+              <Text style={styles.modalCancel}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

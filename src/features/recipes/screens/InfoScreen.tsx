@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import ModalSelector from 'react-native-modal-selector';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ReturnHeaderButton from '@/shared/components/ReturnHeaderButton';
 import InfoDetalladaBG from '@/shared/icons/infoDetalladaBG';
@@ -47,6 +48,7 @@ const getHeroImageStyle = (scrollY: Animated.Value) => ({
 export type InfoScreenProps = NativeStackScreenProps<MainStackParamList, 'Info'>;
 
 const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreenProps) => {
+  const { t } = useTranslation();
   const { id, rId } = route.params || {};
   const { user } = useAuth();
   const { categories } = useUserCategories(user?.uid);
@@ -89,7 +91,7 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
   if (error || !recipe) {
     return (
       <View style={styles.loader}>
-        <Text style={styles.errorText}>{error || 'Recipe not found'}</Text>
+        <Text style={styles.errorText}>{error || t('home.recipeNotFound')}</Text>
       </View>
     );
   }
@@ -114,8 +116,8 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
 
         <View style={styles.content}>
           <View style={styles.tags}>
-            <InfoTag>{`${recipe.readyInMinutes ?? 0} min`}</InfoTag>
-            <InfoTag>{`${recipe.servings ?? 0} servings`}</InfoTag>
+            <InfoTag>{`${recipe.readyInMinutes ?? 0} ${t('home.minutes')}`}</InfoTag>
+            <InfoTag>{`${recipe.servings ?? 0} ${t('home.servings')}`}</InfoTag>
           </View>
           <Text style={styles.title}>{recipe.title}</Text>
           <Text style={styles.subtitle}>{Math.round(recipe.nutrition?.nutrients?.[0]?.amount || 0)} kcal</Text>
@@ -123,7 +125,7 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreen
           {rId && selectorOptions.length > 0 && (
             <ModalSelector
               data={selectorOptions}
-              initValue="Assign to category"
+              initValue={t('favorites.assignToCategory')}
               onChange={handleAssignCategory}
               style={styles.selector}
             />

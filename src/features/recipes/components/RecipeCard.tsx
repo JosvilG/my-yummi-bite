@@ -3,8 +3,27 @@ import { Animated, Dimensions, ImageBackground, StyleSheet, Text, View } from 'r
 import { COLORS, FONTS } from '@/constants/theme';
 import type { RecipeSummary } from '../services/spoonacularService';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_MAX_HEIGHT = SCREEN_HEIGHT * 0.75;
+
+/**
+ * Get high-resolution image URL from Spoonacular
+ * Available sizes: 90x90, 240x150, 312x150, 312x231, 480x360, 556x370, 636x393
+ */
+const getHighResImageUrl = (recipe: RecipeSummary): string => {
+  // If image URL contains size info, replace with larger size
+  if (recipe.image) {
+    // Check if it's a spoonacular URL with size pattern
+    const sizePattern = /-\d+x\d+\./;
+    if (sizePattern.test(recipe.image)) {
+      // Replace with highest quality size
+      return recipe.image.replace(sizePattern, '-636x393.');
+    }
+    return recipe.image;
+  }
+  // Fallback to constructing URL with highest quality
+  return `https://img.spoonacular.com/recipes/${recipe.id}-636x393.jpg`;
+};
 
 interface Props {
   recipe?: RecipeSummary;
@@ -33,11 +52,16 @@ const RecipeCard: React.FC<Props> = ({ recipe, isActive = false }) => {
   }
 
   const calories = Math.round(recipe?.nutrition?.nutrients?.[0]?.amount || 0);
-  const imageSource = recipe.image || `https://spoonacular.com/recipeImages/${recipe.id}-636x393.jpg`;
+  const imageSource = getHighResImageUrl(recipe);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <ImageBackground source={{ uri: imageSource }} style={styles.card} imageStyle={styles.image}>
+      <ImageBackground 
+        source={{ uri: imageSource }} 
+        style={styles.card} 
+        imageStyle={styles.image}
+        resizeMode="cover"
+      >
         <View style={styles.overlay}>
           <Text numberOfLines={2} style={styles.title}>
             {recipe.title}
