@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Alert,
   Dimensions,
   FlatList, 
   Image,
@@ -52,26 +51,23 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleRecipePress = (recipeId: number) => {
     navigation.navigate('Info', { id: recipeId });
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      t('auth.logout'),
-      t('profile.logoutConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('auth.logout'),
-          style: 'destructive',
-          onPress: async () => {
-            await logoutUser();
-          },
-        },
-      ]
-    );
+    setShowLogoutModal(true);
+  };
+
+  const closeLogoutModal = () => {
+    setShowLogoutModal(false);
+  };
+
+  const confirmLogout = async () => {
+    setShowLogoutModal(false);
+    await logoutUser();
   };
 
   const handleSettingsPress = () => {
@@ -244,6 +240,48 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={showLogoutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeLogoutModal}
+      >
+        <View style={styles.settingsOverlay}>
+          <View style={[styles.logoutModal, { backgroundColor: colors.background }]}>
+            <View style={[styles.logoutIconContainer, { backgroundColor: colors.tertiary }]}>
+              <Ionicons name="log-out-outline" size={30} color={colors.primary} />
+            </View>
+            <Text style={[styles.logoutTitle, { color: colors.text }]}>{t('auth.logout')}</Text>
+            <Text style={[styles.logoutDescription, { color: colors.textLight }]}>
+              {t('profile.logoutConfirm')}
+            </Text>
+
+            <View style={styles.logoutActions}>
+              <AnimatedPressable
+                style={[styles.logoutActionButton, styles.logoutCancelButton, { borderColor: colors.border }]}
+                onPress={closeLogoutModal}
+                scaleValue={0.96}
+              >
+                <Text style={[styles.logoutCancelText, { color: colors.text }]}>{t('common.cancel')}</Text>
+              </AnimatedPressable>
+              <AnimatedPressable
+                style={[
+                  styles.logoutActionButton,
+                  styles.logoutConfirmButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={confirmLogout}
+                scaleValue={0.96}
+              >
+                <Text style={[styles.logoutConfirmText, { color: colors.background }]}>
+                  {t('auth.logout')}
+                </Text>
+              </AnimatedPressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showSettingsModal}
@@ -561,6 +599,58 @@ const styles = StyleSheet.create({
   settingsCloseText: {
     fontFamily: FONTS.medium,
     fontSize: 15,
+  },
+  logoutModal: {
+    width: '85%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+  },
+  logoutIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoutTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  logoutDescription: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  logoutActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  logoutActionButton: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutCancelButton: {
+    borderWidth: 1,
+  },
+  logoutConfirmButton: {
+    borderWidth: 0,
+  },
+  logoutCancelText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+  },
+  logoutConfirmText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14,
   },
 });
 
