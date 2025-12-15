@@ -23,6 +23,7 @@ import { useColors } from '@/shared/hooks/useColors';
 import type { MainStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import { captureException } from '@/lib/sentry';
+import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -46,6 +47,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
   const { categories } = useUserCategories(user?.uid);
   const { favorites, loading: favoritesLoading, addFavorite, removeFavorite } = useFavoriteRecipes();
   const colors = useColors();
+  const { showInfo, showConfirm, modal } = useAppAlertModal();
   
   const [recipe, setRecipe] = useState<RecipeSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -176,6 +178,26 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
     // TODO: Implement share functionality
   };
 
+  const handleDeleteSaved = async () => {
+    if (!favoriteDoc?.docId) return;
+    if (!user?.uid) {
+      showInfo({ title: t('common.error'), message: t('errors.loginRequiredToSave'), confirmText: t('common.close') });
+      return;
+    }
+
+    showConfirm({
+      title: t('favorites.deleteTitle'),
+      message: t('favorites.deleteMessage'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      confirmVariant: 'destructive',
+      iconName: 'trash-outline',
+      onConfirm: async () => {
+        await removeFavorite(favoriteDoc.docId);
+      },
+    });
+  };
+
   const getDifficultyText = (readyInMinutes: number) => {
     if (readyInMinutes <= 20) return t('recipe.easy');
     if (readyInMinutes <= 45) return t('recipe.medium');
@@ -259,6 +281,11 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t('recipe.details')}</Text>
         <View style={styles.headerRight}>
+          {isFavorite && (
+            <Pressable onPress={handleDeleteSaved} style={styles.headerButton}>
+              <Ionicons name="trash-outline" size={22} color={colors.text} />
+            </Pressable>
+          )}
           <Pressable onPress={handleFavoritePress} style={styles.headerButton}>
             <Ionicons 
               name={isFavorite ? 'heart' : 'heart-outline'} 
@@ -400,6 +427,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
           </View>
         </View>
       </ScrollView>
+      {modal}
     </View>
   );
 };

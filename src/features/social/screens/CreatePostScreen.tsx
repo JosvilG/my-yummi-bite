@@ -25,6 +25,7 @@ import { saveCustomFavoriteRecipe, savePublishedFavoriteRecipe } from '@/feature
 import { publishRecipe } from '../services/publishedRecipeService';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 import CameraView from '@/features/recipes/components/CameraView';
+import { setPublishedRecipeSave } from '@/features/social/services/publishedRecipeService';
 type Props = BottomTabScreenProps<TabParamList, 'Add'>;
 
 const FALLBACK_IMAGE_URL =
@@ -245,6 +246,7 @@ const CreatePostScreen: React.FC<Props> = ({ navigation }) => {
         readyInMinutes,
         difficulty,
       });
+      await setPublishedRecipeSave(result.id, user.uid, true);
     }
 
     resetForm();

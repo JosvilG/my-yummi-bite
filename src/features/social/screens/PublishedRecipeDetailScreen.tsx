@@ -19,9 +19,12 @@ import RecipeDetailSkeleton from '@/shared/components/RecipeDetailSkeleton';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
+  deletePublishedRecipe,
   getPublishedRecipeById,
   hasUserLikedPublishedRecipe,
+  incrementPublishedRecipeShare,
   setPublishedRecipeLike,
+  setPublishedRecipeSave,
   type PublishedRecipeDoc,
 } from '../services/publishedRecipeService';
 import {
@@ -35,7 +38,7 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
   const { t } = useTranslation();
   const colors = useColors();
   const { user } = useAuth();
-  const { showInfo, modal } = useAppAlertModal();
+  const { showInfo, showConfirm, modal } = useAppAlertModal();
   const { id } = route.params;
 
   const [recipe, setRecipe] = useState<PublishedRecipeDoc | null>(null);
@@ -50,6 +53,7 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
 
   const canLike = !!user?.uid;
   const canFavorite = !!user?.uid;
+  const canDeletePublished = !!user?.uid && !!recipe && recipe.authorId === user.uid;
 
   useEffect(() => {
     let active = true;
@@ -141,6 +145,83 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
 
   const handleGoBack = () => navigation.goBack();
 
+  const handleDelete = async () => {
+    if (!recipe) return;
+    if (!user?.uid) {
+      showInfo({ title: t('common.error'), message: t('errors.loginRequiredToSave'), confirmText: t('common.close') });
+      return;
+    }
+
+    if (canDeletePublished) {
+      showConfirm({
+        title: t('social.published.deleteTitle'),
+        message: t('social.published.deleteMessage'),
+        confirmText: t('common.delete'),
+        cancelText: t('common.cancel'),
+        confirmVariant: 'destructive',
+        iconName: 'trash-outline',
+        onConfirm: async () => {
+          if (favorited) {
+            await togglePublishedFavoriteRecipe(user.uid, {
+              publishedId: recipe.id,
+              title: recipe.title,
+              imageUrl: recipe.imageUrl,
+              ingredients: recipe.ingredients,
+              steps: recipe.steps,
+              readyInMinutes: recipe.readyInMinutes,
+              difficulty: recipe.difficulty,
+            });
+            setFavorited(false);
+          }
+
+          const result = await deletePublishedRecipe(recipe.id);
+          if (!result.success) {
+            showInfo({
+              title: t('common.error'),
+              message: result.error ?? t('common.unknownError'),
+              confirmText: t('common.close'),
+            });
+            return;
+          }
+
+          navigation.goBack();
+        },
+      });
+      return;
+    }
+
+    if (!favorited) return;
+    showConfirm({
+      title: t('favorites.deleteTitle'),
+      message: t('favorites.deleteMessage'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      confirmVariant: 'destructive',
+      iconName: 'trash-outline',
+      onConfirm: async () => {
+        const result = await togglePublishedFavoriteRecipe(user.uid, {
+          publishedId: recipe.id,
+          title: recipe.title,
+          imageUrl: recipe.imageUrl,
+          ingredients: recipe.ingredients,
+          steps: recipe.steps,
+          readyInMinutes: recipe.readyInMinutes,
+          difficulty: recipe.difficulty,
+        });
+        if (!result.success) {
+          showInfo({
+            title: t('common.error'),
+            message: result.error ?? t('errors.favoriteUpdateFailed'),
+            confirmText: t('common.close'),
+          });
+          return;
+        }
+        setFavorited(false);
+        await setPublishedRecipeSave(id, user.uid, false);
+      },
+    });
+  };
+
   const handleToggleFavorite = async () => {
     if (!user?.uid || !recipe) {
       showInfo({ title: t('common.error'), message: t('errors.loginRequiredToSave'), confirmText: t('common.close') });
@@ -169,6 +250,7 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
       return;
     }
     setFavorited(!!result.favorited);
+    await setPublishedRecipeSave(id, user.uid, !!result.favorited);
   };
 
   const handleToggleLike = async () => {
@@ -187,10 +269,13 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
   const handleShare = async () => {
     if (!recipe) return;
     try {
-      await Share.share({
+      const result = await Share.share({
         message: recipe.title,
         url: recipe.imageUrl,
       });
+      if (result.action === Share.sharedAction) {
+        await incrementPublishedRecipeShare(id);
+      }
     } catch {
       showInfo({ title: t('common.error'), message: t('errors.shareFailed'), confirmText: t('common.close') });
     }
@@ -220,6 +305,11 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t('recipe.details')}</Text>
         <View style={styles.headerRight}>
+          {(canDeletePublished || favorited) && (
+            <Pressable onPress={handleDelete} style={styles.headerButton}>
+              <Ionicons name="trash-outline" size={22} color={colors.text} />
+            </Pressable>
+          )}
           <Pressable
             onPress={handleToggleFavorite}
             style={styles.headerButton}

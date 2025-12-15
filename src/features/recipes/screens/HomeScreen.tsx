@@ -20,6 +20,7 @@ import {
   getPublishedRecipes,
   hasUserLikedPublishedRecipe,
   setPublishedRecipeLike,
+  setPublishedRecipeSave,
   type PublishedRecipeDoc,
 } from '@/features/social/services/publishedRecipeService';
 import { addBreadcrumb, captureException } from '@/lib/sentry';
@@ -232,6 +233,7 @@ const HomeScreen: React.FC = observer(() => {
           readyInMinutes: card.readyInMinutes,
           difficulty: card.difficulty,
         });
+        await setPublishedRecipeSave(card.id, user.uid, true);
       } else {
         await saveFavoriteRecipe(user.uid, card.id, card.image ?? '', card.cuisines);
       }

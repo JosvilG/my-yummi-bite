@@ -7,6 +7,7 @@ import {
   getDocs,
   increment,
   limit,
+  onSnapshot,
   orderBy,
   query,
   setDoc,
@@ -85,6 +86,8 @@ export const publishRecipe = async (
       ...(recipe.difficulty && { difficulty: recipe.difficulty }),
       ...(recipe.nutrition && { nutrition: recipe.nutrition }),
       likesCount: 0,
+      savesCount: 0,
+      sharesCount: 0,
       createdAt: serverTimestamp(),
     });
     return { success: true, id: docRef.id, imageUrl };
@@ -105,6 +108,8 @@ export type PublishedRecipeDoc = {
   readyInMinutes?: number;
   difficulty?: 'easy' | 'medium' | 'hard';
   likesCount: number;
+  savesCount?: number;
+  sharesCount?: number;
   likedByMe?: boolean;
 };
 
@@ -168,6 +173,68 @@ export const getPublishedRecipesByAuthor = async (
   }
 };
 
+export const subscribeToPublishedRecipesByAuthor = (
+  authorId: string,
+  callback: (result: { success: boolean; recipes?: PublishedRecipeDoc[]; error?: string }) => void,
+  count = 50
+) => {
+  let unsubscribe: (() => void) | null = null;
+  let didFallback = false;
+
+  const buildRecipes = (snapshot: any): PublishedRecipeDoc[] => {
+    const recipes: PublishedRecipeDoc[] = [];
+    snapshot.forEach((docSnap: any) => {
+      const data = docSnap.data() as Omit<PublishedRecipeDoc, 'id'>;
+      recipes.push({ id: docSnap.id, ...data });
+    });
+    return recipes;
+  };
+
+  const start = (useOrderBy: boolean) => {
+    const q = useOrderBy
+      ? query(
+          collection(db, 'PublishedRecipes'),
+          where('authorId', '==', authorId),
+          orderBy('createdAt', 'desc'),
+          limit(count)
+        )
+      : query(collection(db, 'PublishedRecipes'), where('authorId', '==', authorId), limit(count));
+
+    unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        callback({ success: true, recipes: buildRecipes(snapshot) });
+      },
+      (error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        captureException(error as Error, { operation: 'subscribeToPublishedRecipesByAuthor', authorId });
+
+        if (!didFallback && useOrderBy) {
+          didFallback = true;
+          try {
+            unsubscribe?.();
+          } catch {
+            // ignore
+          }
+          start(false);
+          return;
+        }
+
+        callback({ success: false, error: message });
+      }
+    );
+  };
+
+  start(true);
+  return () => {
+    try {
+      unsubscribe?.();
+    } catch {
+      // ignore
+    }
+  };
+};
+
 export const getPublishedRecipeById = async (
   publishedRecipeId: string
 ): Promise<{ success: boolean; recipe?: PublishedRecipeDoc; error?: string }> => {
@@ -222,6 +289,76 @@ export const setPublishedRecipeLike = async (
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     captureException(error as Error, { operation: 'setPublishedRecipeLike', userId, publishedRecipeId });
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const hasUserSavedPublishedRecipe = async (
+  publishedRecipeId: string,
+  userId: string
+): Promise<{ success: boolean; saved?: boolean; error?: string }> => {
+  try {
+    const saveRef = doc(db, 'PublishedRecipes', publishedRecipeId, 'saves', userId);
+    const snap = await getDoc(saveRef);
+    return { success: true, saved: snap.exists() };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    captureException(error as Error, { operation: 'hasUserSavedPublishedRecipe', userId, publishedRecipeId });
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const setPublishedRecipeSave = async (
+  publishedRecipeId: string,
+  userId: string,
+  save: boolean
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const recipeRef = doc(db, 'PublishedRecipes', publishedRecipeId);
+    const saveRef = doc(db, 'PublishedRecipes', publishedRecipeId, 'saves', userId);
+
+    const snap = await getDoc(saveRef);
+    if (save) {
+      if (snap.exists()) return { success: true };
+      await setDoc(saveRef, { createdAt: serverTimestamp() });
+      await updateDoc(recipeRef, { savesCount: increment(1) });
+      return { success: true };
+    }
+
+    if (!snap.exists()) return { success: true };
+    await deleteDoc(saveRef);
+    await updateDoc(recipeRef, { savesCount: increment(-1) });
+    return { success: true };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    captureException(error as Error, { operation: 'setPublishedRecipeSave', userId, publishedRecipeId });
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const incrementPublishedRecipeShare = async (
+  publishedRecipeId: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const recipeRef = doc(db, 'PublishedRecipes', publishedRecipeId);
+    await updateDoc(recipeRef, { sharesCount: increment(1) });
+    return { success: true };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    captureException(error as Error, { operation: 'incrementPublishedRecipeShare', publishedRecipeId });
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const deletePublishedRecipe = async (
+  publishedRecipeId: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    await deleteDoc(doc(db, 'PublishedRecipes', publishedRecipeId));
+    return { success: true };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    captureException(error as Error, { operation: 'deletePublishedRecipe', publishedRecipeId });
     return { success: false, error: errorMessage };
   }
 };

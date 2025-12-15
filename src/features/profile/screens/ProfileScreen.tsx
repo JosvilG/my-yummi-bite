@@ -30,7 +30,9 @@ import { FONTS } from '@/constants/theme';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import type { FavoriteRecipeDoc } from '@/features/recipes/services/favoriteService';
-import { getPublishedRecipesByAuthor, type PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
+import { subscribeToPublishedRecipesByAuthor, type PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
+import ProfileDashboardSkeleton from '../components/ProfileDashboardSkeleton';
+import ProfilePublishedGridSkeleton from '../components/ProfilePublishedGridSkeleton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
@@ -104,30 +106,36 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
       setPublishedByMeError(null);
       return;
     }
-    if (activeTab !== 'published') return;
+    if (activeTab !== 'published' && activeTab !== 'saved') return;
 
-    let active = true;
-    const load = async () => {
-      setPublishedByMeLoading(true);
-      const result = await getPublishedRecipesByAuthor(user.uid, 50);
-      if (!active) return;
-      if (!result.success) {
-        setPublishedByMe([]);
-        setPublishedByMeError(result.error ?? t('common.unknownError'));
+    setPublishedByMeLoading(true);
+    const unsubscribe = subscribeToPublishedRecipesByAuthor(
+      user.uid,
+      (result) => {
+        if (!result.success) {
+          setPublishedByMe([]);
+          setPublishedByMeError(result.error ?? t('common.unknownError'));
+          setPublishedByMeLoading(false);
+          return;
+        }
+
+        setPublishedByMe(result.recipes ?? []);
+        setPublishedByMeError(null);
         setPublishedByMeLoading(false);
-        return;
-      }
+      },
+      50
+    );
 
-      setPublishedByMe(result.recipes ?? []);
-      setPublishedByMeError(null);
-      setPublishedByMeLoading(false);
-    };
-
-    load();
-    return () => {
-      active = false;
-    };
+    return unsubscribe;
   }, [activeTab, publishedReloadNonce, t, user?.uid]);
+
+  const publishedStats = React.useMemo(() => {
+    const publishedCount = publishedByMe.length;
+    const likes = publishedByMe.reduce((sum, r) => sum + (r.likesCount ?? 0), 0);
+    const saves = publishedByMe.reduce((sum, r) => sum + (r.savesCount ?? 0), 0);
+    const shares = publishedByMe.reduce((sum, r) => sum + (r.sharesCount ?? 0), 0);
+    return { publishedCount, likes, saves, shares };
+  }, [publishedByMe]);
 
   const handlePublishedPress = (publishedId: string) => {
     navigation.navigate('PublishedInfo', { id: publishedId });
@@ -244,30 +252,67 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
         </View>
 
         {activeTab === 'saved' && (
-          <View style={styles.recipesGrid}>
-            {favorites.map((item) => (
-              <AnimatedPressable 
-                key={item.docId} 
-                onPress={() => handleRecipePress(item.id)} 
-                style={styles.recipeCard}
+          publishedByMeLoading ? (
+            <ProfileDashboardSkeleton />
+          ) : publishedByMeError ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="alert-circle-outline" size={48} color={colors.border} />
+              <Text style={[styles.emptyText, { color: colors.textLight }]}>{publishedByMeError}</Text>
+              <AnimatedPressable
+                onPress={() => setPublishedReloadNonce(n => n + 1)}
+                style={[styles.retryButton, { backgroundColor: colors.tertiary }]}
                 scaleValue={0.96}
               >
-                <View style={[styles.recipeImageContainer, { backgroundColor: colors.tertiary }]}>
-                  <Image source={{ uri: item.url }} style={styles.recipeImage} />
-                  <View style={[styles.heartBadge, { backgroundColor: colors.background }]}>
-                    <Ionicons name="heart" size={14} color={colors.primary} />
-                  </View>
-                </View>
+                <Text style={[styles.retryText, { color: colors.text }]}>{t('common.retry')}</Text>
               </AnimatedPressable>
-            ))}
-          </View>
+            </View>
+          ) : (
+            <View style={styles.dashboardContainer}>
+              <View style={styles.dashboardHeader}>
+                <Text style={[styles.dashboardTitle, { color: colors.text }]}>{t('profile.dashboardTitle')}</Text>
+                <Text style={[styles.dashboardSubtitle, { color: colors.textLight }]}>{t('profile.dashboardSubtitle')}</Text>
+              </View>
+
+              <View style={styles.dashboardGrid}>
+                <View style={[styles.dashboardCard, { backgroundColor: colors.tertiary }]}>
+                  <View style={[styles.dashboardIcon, { backgroundColor: colors.background }]}>
+                    <Ionicons name="restaurant-outline" size={18} color={colors.primary} />
+                  </View>
+                  <Text style={[styles.dashboardValue, { color: colors.text }]}>{publishedStats.publishedCount}</Text>
+                  <Text style={[styles.dashboardLabel, { color: colors.textLight }]}>{t('profile.statPublished')}</Text>
+                </View>
+
+                <View style={[styles.dashboardCard, { backgroundColor: colors.tertiary }]}>
+                  <View style={[styles.dashboardIcon, { backgroundColor: colors.background }]}>
+                    <Ionicons name="heart-outline" size={18} color={colors.primary} />
+                  </View>
+                  <Text style={[styles.dashboardValue, { color: colors.text }]}>{publishedStats.saves}</Text>
+                  <Text style={[styles.dashboardLabel, { color: colors.textLight }]}>{t('profile.statSaves')}</Text>
+                </View>
+
+                <View style={[styles.dashboardCard, { backgroundColor: colors.tertiary }]}>
+                  <View style={[styles.dashboardIcon, { backgroundColor: colors.background }]}>
+                    <Ionicons name="thumbs-up-outline" size={18} color={colors.primary} />
+                  </View>
+                  <Text style={[styles.dashboardValue, { color: colors.text }]}>{publishedStats.likes}</Text>
+                  <Text style={[styles.dashboardLabel, { color: colors.textLight }]}>{t('profile.statLikes')}</Text>
+                </View>
+
+                <View style={[styles.dashboardCard, { backgroundColor: colors.tertiary }]}>
+                  <View style={[styles.dashboardIcon, { backgroundColor: colors.background }]}>
+                    <Ionicons name="share-social-outline" size={18} color={colors.primary} />
+                  </View>
+                  <Text style={[styles.dashboardValue, { color: colors.text }]}>{publishedStats.shares}</Text>
+                  <Text style={[styles.dashboardLabel, { color: colors.textLight }]}>{t('profile.statShares')}</Text>
+                </View>
+              </View>
+            </View>
+          )
         )}
 
         {activeTab === 'published' && (
           publishedByMeLoading ? (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyText, { color: colors.textLight }]}>{t('common.loading')}</Text>
-            </View>
+            <ProfilePublishedGridSkeleton />
           ) : publishedByMeError ? (
             <View style={styles.emptyState}>
               <Ionicons name="alert-circle-outline" size={48} color={colors.border} />
@@ -594,6 +639,52 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     fontSize: 14,
     marginTop: 12,
+  },
+  dashboardContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 100,
+  },
+  dashboardHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dashboardTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 18,
+  },
+  dashboardSubtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 13,
+    marginTop: 6,
+  },
+  dashboardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  dashboardCard: {
+    width: (SCREEN_WIDTH - 16 * 2 - 12) / 2,
+    borderRadius: 16,
+    padding: 14,
+  },
+  dashboardIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  dashboardValue: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+  },
+  dashboardLabel: {
+    fontFamily: FONTS.regular,
+    fontSize: 12,
+    marginTop: 2,
   },
   retryButton: {
     marginTop: 14,

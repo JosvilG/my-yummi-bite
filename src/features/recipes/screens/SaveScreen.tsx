@@ -33,6 +33,7 @@ import type { UserCategory } from '../services/categoryService';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
+import { setPublishedRecipeSave } from '@/features/social/services/publishedRecipeService';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -100,6 +101,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   };
 
   const handleDeleteFavorite = async (docId: string) => {
+    const recipeToDelete = favorites.find(r => r.docId === docId);
     showConfirm({
       title: t('favorites.deleteTitle'),
       message: t('favorites.deleteMessage'),
@@ -115,6 +117,11 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
             message: result?.error || 'Unable to delete recipe',
             confirmText: t('common.close'),
           });
+          return;
+        }
+
+        if (user?.uid && recipeToDelete?.source === 'published' && recipeToDelete.publishedId) {
+          await setPublishedRecipeSave(recipeToDelete.publishedId, user.uid, false);
         }
       },
     });
