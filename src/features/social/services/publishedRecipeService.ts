@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  type DocumentData,
   getDoc,
   getDocs,
   increment,
@@ -10,7 +11,9 @@ import {
   onSnapshot,
   orderBy,
   query,
+  type QueryDocumentSnapshot,
   setDoc,
+  startAfter,
   updateDoc,
   where,
 } from 'firebase/firestore';
@@ -114,6 +117,8 @@ export type PublishedRecipeDoc = {
   createdAt?: unknown;
 };
 
+export type PublishedRecipesPageCursor = QueryDocumentSnapshot<DocumentData>;
+
 export const getPublishedRecipes = async (
   count = 10
 ): Promise<{ success: boolean; recipes?: PublishedRecipeDoc[]; error?: string }> => {
@@ -130,6 +135,30 @@ export const getPublishedRecipes = async (
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     captureException(error as Error, { operation: 'getPublishedRecipes' });
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const getPublishedRecipesPage = async (
+  count = 10,
+  cursor?: PublishedRecipesPageCursor
+): Promise<{ success: boolean; recipes?: PublishedRecipeDoc[]; cursor?: PublishedRecipesPageCursor; error?: string }> => {
+  try {
+    const base = [collection(db, 'PublishedRecipes'), orderBy('createdAt', 'desc'), limit(count)] as const;
+    const q = cursor ? query(...base, startAfter(cursor)) : query(...base);
+    const snapshot = await getDocs(q);
+
+    const recipes: PublishedRecipeDoc[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data() as Omit<PublishedRecipeDoc, 'id'>;
+      recipes.push({ id: docSnap.id, ...data });
+    });
+
+    const nextCursor = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : cursor;
+    return { success: true, recipes, cursor: nextCursor };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    captureException(error as Error, { operation: 'getPublishedRecipesPage' });
     return { success: false, error: errorMessage };
   }
 };
@@ -168,6 +197,49 @@ export const getPublishedRecipesByAuthors = async (
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     captureException(error as Error, { operation: 'getPublishedRecipesByAuthors' });
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const getPublishedRecipesByAuthorsPage = async (
+  authorIds: string[],
+  count = 10,
+  cursor?: PublishedRecipesPageCursor
+): Promise<{ success: boolean; recipes?: PublishedRecipeDoc[]; cursor?: PublishedRecipesPageCursor; error?: string }> => {
+  try {
+    const ids = (authorIds ?? []).filter(Boolean).slice(0, 10);
+    if (ids.length === 0) return { success: true, recipes: [], cursor };
+
+    let snapshot;
+    try {
+      const base = [
+        collection(db, 'PublishedRecipes'),
+        where('authorId', 'in', ids),
+        orderBy('createdAt', 'desc'),
+        limit(count),
+      ] as const;
+      const q = cursor ? query(...base, startAfter(cursor)) : query(...base);
+      snapshot = await getDocs(q);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      log.warn('getPublishedRecipesByAuthorsPage: falling back query without orderBy', { authorIds: ids, error: message });
+      captureException(error as Error, { operation: 'getPublishedRecipesByAuthorsPage_orderBy' });
+      const base = [collection(db, 'PublishedRecipes'), where('authorId', 'in', ids), limit(count)] as const;
+      const q = cursor ? query(...base, startAfter(cursor)) : query(...base);
+      snapshot = await getDocs(q);
+    }
+
+    const recipes: PublishedRecipeDoc[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data() as Omit<PublishedRecipeDoc, 'id'>;
+      recipes.push({ id: docSnap.id, ...data });
+    });
+
+    const nextCursor = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : cursor;
+    return { success: true, recipes, cursor: nextCursor };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    captureException(error as Error, { operation: 'getPublishedRecipesByAuthorsPage' });
     return { success: false, error: errorMessage };
   }
 };

@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, increment, limit, onSnapshot, query, runTransaction } from 'firebase/firestore';
+import { collection, doc, getDocs, increment, limit, onSnapshot, orderBy, query, runTransaction } from 'firebase/firestore';
 import { db, serverTimestamp } from '@/app/config/firebase';
 import { captureException } from '@/lib/sentry';
 
@@ -7,7 +7,7 @@ export const getFollowingUserIds = async (
   max = 10
 ): Promise<{ success: boolean; userIds?: string[]; error?: string }> => {
   try {
-    const q = query(collection(db, 'users', userId, 'following'), limit(max));
+    const q = query(collection(db, 'users', userId, 'following'), orderBy('createdAt', 'desc'), limit(max));
     const snap = await getDocs(q);
     return { success: true, userIds: snap.docs.map(d => d.id) };
   } catch (error: unknown) {
@@ -15,6 +15,19 @@ export const getFollowingUserIds = async (
     captureException(error as Error, { operation: 'getFollowingUserIds', userId });
     return { success: false, error: errorMessage };
   }
+};
+
+export const subscribeToFollowingUserIds = (
+  userId: string,
+  max: number,
+  callback: (userIds: string[]) => void
+) => {
+  const q = query(collection(db, 'users', userId, 'following'), orderBy('createdAt', 'desc'), limit(max));
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map(d => d.id)),
+    () => callback([])
+  );
 };
 
 export const subscribeToFollowingStatus = (

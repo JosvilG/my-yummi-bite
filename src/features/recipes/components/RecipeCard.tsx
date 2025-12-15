@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo } from 'react';
 import { 
   Dimensions, 
   Image, 
@@ -17,10 +17,6 @@ import type { RecipeSummary } from '../services/spoonacularService';
 import type { CommonStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import type { PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
-import ReportReasonModal, { type ReportReasonKey } from '@/shared/components/ReportReasonModal';
-import { reportRecipe } from '../services/reportService';
-import { useAuth } from '@/app/providers/AuthProvider';
-import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 import { useTranslation } from 'react-i18next';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -50,16 +46,13 @@ interface Props {
   onSkip?: () => void;
   onSave?: () => void;
   onTogglePublishedLike?: (publishedId: string, liked: boolean) => void;
+  onReportPress?: (recipe: HomeCard) => void;
 }
 
-const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublishedLike }) => {
+const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublishedLike, onReportPress }) => {
   const navigation = useNavigation<NativeStackNavigationProp<CommonStackParamList>>();
   const { t } = useTranslation();
   const colors = useColors();
-  const { user } = useAuth();
-  const { showInfo, modal } = useAppAlertModal();
-  const [reportVisible, setReportVisible] = useState(false);
-  const [reporting, setReporting] = useState(false);
 
   if (!recipe) {
     return null;
@@ -95,44 +88,13 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublished
     onSave?.();
   };
 
-  const handleReportSubmit = async (reason: ReportReasonKey) => {
-    if (!user?.uid) {
-      showInfo({
-        title: t('common.error'),
-        message: t('errors.loginRequiredToReport'),
-        confirmText: t('common.close'),
-      });
-      return;
-    }
-
-    setReporting(true);
-    const target = isPublishedRecipe(recipe)
-      ? { type: 'published' as const, id: recipe.id, title: recipe.title }
-      : { type: 'spoonacular' as const, id: recipe.id, title: recipe.title };
-
-    const result = await reportRecipe(user.uid, target, reason);
-    setReporting(false);
-    setReportVisible(false);
-
-    if (!result.success) {
-      showInfo({ title: t('common.error'), message: result.error ?? t('common.unknownError'), confirmText: t('common.close') });
-      return;
-    }
-
-    showInfo({
-      title: t('report.successTitle'),
-      message: t('report.successMessage'),
-      confirmText: t('common.close'),
-    });
-  };
-
   return (
     <View style={styles.container}>
       <View style={[styles.card, { backgroundColor: colors.background }]}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: imageSource }} style={styles.recipeImage} />
           <Pressable
-            onPress={() => setReportVisible(true)}
+            onPress={() => onReportPress?.(recipe)}
             style={[styles.reportBadge, { backgroundColor: colors.background, borderColor: colors.border }]}
             hitSlop={10}
           >
@@ -215,14 +177,6 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublished
           </View>
         </View>
       </View>
-
-      <ReportReasonModal
-        visible={reportVisible}
-        onClose={() => setReportVisible(false)}
-        onSubmit={handleReportSubmit}
-        submitting={reporting}
-      />
-      {modal}
     </View>
   );
 };
@@ -345,4 +299,32 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecipeCard;
+const areEqual = (prev: Props, next: Props) => {
+  if (prev.recipe === next.recipe) return true;
+  if (!prev.recipe || !next.recipe) return false;
+
+  if (prev.recipe.id !== next.recipe.id) return false;
+  if (prev.recipe.title !== next.recipe.title) return false;
+
+  const prevIsPublished = typeof prev.recipe.id === 'string';
+  const nextIsPublished = typeof next.recipe.id === 'string';
+  if (prevIsPublished !== nextIsPublished) return false;
+
+  if (prevIsPublished && nextIsPublished) {
+    const a = prev.recipe as PublishedRecipeDoc;
+    const b = next.recipe as PublishedRecipeDoc;
+    return (
+      a.imageUrl === b.imageUrl &&
+      a.readyInMinutes === b.readyInMinutes &&
+      a.difficulty === b.difficulty &&
+      (a.likesCount ?? 0) === (b.likesCount ?? 0) &&
+      !!a.likedByMe === !!b.likedByMe
+    );
+  }
+
+  const a = prev.recipe as RecipeSummary;
+  const b = next.recipe as RecipeSummary;
+  return a.image === b.image && a.readyInMinutes === b.readyInMinutes;
+};
+
+export default memo(RecipeCard, areEqual);
