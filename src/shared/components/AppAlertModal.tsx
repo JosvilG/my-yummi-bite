@@ -31,7 +31,7 @@ const AppAlertModal: React.FC<Props> = ({
   onCancel,
 }) => {
   const colors = useColors();
-  const confirmColor = confirmVariant === 'destructive' ? colors.error : colors.primary;
+  const confirmColor = colors.primary;
 
   return (
     <Modal
@@ -153,4 +153,3 @@ const styles = StyleSheet.create({
 });
 
 export default AppAlertModal;
-

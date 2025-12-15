@@ -147,7 +147,7 @@
     "deleteCategoryTitle": "Delete Category",
     "deleteCategoryMessage": "Are you sure you want to delete this category?",
     "selected": "selected",
-    "moveToCategory": "Move to Category"
+    "moveToCategory": "Add to Category"
   },
   "profile": {
     "title": "User Profile",
@@ -166,6 +166,7 @@
     "statSaves": "Saves",
     "statLikes": "Likes",
     "statShares": "Shares",
+    "editProfileHint": "Profile editing will be available soon.",
     "selectLanguage": "Select Language",
     "languageDownloadError": "Failed to download language. Using English.",
     "languageHint": "Languages are downloaded when selected to save space.",
@@ -181,7 +182,17 @@
     "following": "Following",
     "defaultBio": "Food explorer. Lover of tacos and desserts. #FoodieLife",
     "noPublished": "No published recipes yet",
-    "memberSince": "Member since 2024"
+    "memberSince": "Member since 2024",
+    "pauseAccount": "Pause account",
+    "pauseAccountTitle": "Pause account",
+    "pauseAccountMessage": "Your account will be paused and you will be logged out. You can log back in anytime.",
+    "deleteAccount": "Delete account",
+    "deleteAccountTitle": "Delete account",
+    "deleteAccountMessage": "Your account will be deleted. Your published recipes will remain visible but will be anonymized. This cannot be undone.",
+    "reauthTitle": "Confirm your password",
+    "reauthMessage": "For security, please enter your password to continue.",
+    "reauthNoEmail": "No email found for this account. Please log in again and try.",
+    "reauthUnsupported": "This sign-in method requires you to log in again to delete your account."
   },
   "camera": {
     "permissionRequired": "Camera access is required to capture recipes.",

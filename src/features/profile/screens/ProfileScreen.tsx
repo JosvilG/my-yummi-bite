@@ -7,6 +7,7 @@ import {
   ScrollView, 
   StyleSheet, 
   Text, 
+  TextInput,
   View 
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
@@ -33,6 +34,12 @@ import type { FavoriteRecipeDoc } from '@/features/recipes/services/favoriteServ
 import { subscribeToPublishedRecipesByAuthor, type PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
 import ProfileDashboardSkeleton from '../components/ProfileDashboardSkeleton';
 import ProfilePublishedGridSkeleton from '../components/ProfilePublishedGridSkeleton';
+import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
+import CameraView from '@/features/recipes/components/CameraView';
+import { updateUserProfile } from '../services/profileService';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { deleteUserAccountKeepRecipes, pauseUserAccount } from '../services/accountService';
+import { EmailAuthProvider, deleteUser, reauthenticateWithCredential } from 'firebase/auth';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
@@ -49,6 +56,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
   const { user } = useAuth();
   const { themeMode } = useTheme();
   const colors = useColors();
+  const { showInfo, showConfirm, modal: infoModal } = useAppAlertModal();
   const { favorites, loading } = useFavoriteRecipes();
   const { profile } = useUserProfile(user?.uid);
   const [activeTab, setActiveTab] = useState<TabType>('saved');
@@ -60,6 +68,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
   const [publishedByMeLoading, setPublishedByMeLoading] = useState(false);
   const [publishedByMeError, setPublishedByMeError] = useState<string | null>(null);
   const [publishedReloadNonce, setPublishedReloadNonce] = useState(0);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileNameDraft, setProfileNameDraft] = useState('');
+  const [profileBioDraft, setProfileBioDraft] = useState('');
+  const [profilePhotoDraft, setProfilePhotoDraft] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(false);
+  const [accountActionLoading, setAccountActionLoading] = useState(false);
+  const [reauthModalVisible, setReauthModalVisible] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState('');
 
   const handleRecipePress = (recipeId: number) => {
     log.info('Navigation to recipe details', { recipeId, from: 'ProfileScreen' });
@@ -96,6 +113,160 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
       case 'light': return t('settings.lightMode');
       case 'dark': return t('settings.darkMode');
       default: return t('settings.autoMode');
+    }
+  };
+
+  useEffect(() => {
+    if (!isEditingProfile) return;
+    setProfileNameDraft(profile?.name ?? '');
+    setProfileBioDraft(profile?.bio ?? '');
+    setProfilePhotoDraft(null);
+  }, [isEditingProfile, profile?.bio, profile?.name]);
+
+  const handleStartEditProfile = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEditProfile = () => {
+    setIsEditingProfile(false);
+    setProfilePhotoDraft(null);
+    setCameraVisible(false);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user?.uid) return;
+    const name = profileNameDraft.trim();
+    const bio = profileBioDraft.trim();
+    if (!name) {
+      showInfo({ title: t('common.error'), message: t('auth.fillAllFields'), confirmText: t('common.close') });
+      return;
+    }
+
+    setSavingProfile(true);
+    const result = await updateUserProfile(user.uid, {
+      name,
+      bio,
+      photoUrl: profilePhotoDraft ?? undefined,
+    });
+    setSavingProfile(false);
+
+    if (!result.success) {
+      showInfo({
+        title: t('common.error'),
+        message: result.error ?? t('common.unknownError'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    setIsEditingProfile(false);
+    setProfilePhotoDraft(null);
+  };
+
+  const handlePauseAccountPress = () => {
+    if (!user?.uid) return;
+
+    showConfirm({
+      title: t('profile.pauseAccountTitle'),
+      message: t('profile.pauseAccountMessage'),
+      iconName: 'pause-circle-outline',
+      confirmText: t('profile.pauseAccount'),
+      cancelText: t('common.cancel'),
+      confirmVariant: 'destructive',
+      onConfirm: async () => {
+        if (!user?.uid) return;
+        setAccountActionLoading(true);
+        const result = await pauseUserAccount(user.uid);
+        setAccountActionLoading(false);
+
+        if (!result.success) {
+          showInfo({
+            title: t('common.error'),
+            message: result.error ?? t('common.unknownError'),
+            confirmText: t('common.close'),
+          });
+          return;
+        }
+
+        await logoutUser();
+      },
+    });
+  };
+
+  const handleDeleteAccountPress = () => {
+    if (!user) return;
+
+    showConfirm({
+      title: t('profile.deleteAccountTitle'),
+      message: t('profile.deleteAccountMessage'),
+      iconName: 'trash-outline',
+      confirmText: t('profile.deleteAccount'),
+      cancelText: t('common.cancel'),
+      confirmVariant: 'destructive',
+      onConfirm: () => {
+        setReauthPassword('');
+        setReauthModalVisible(true);
+      },
+    });
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (!user) return;
+    if (!user.email) {
+      showInfo({
+        title: t('common.error'),
+        message: t('profile.reauthNoEmail'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    const hasPasswordProvider = user.providerData?.some(p => p.providerId === 'password');
+    if (!hasPasswordProvider) {
+      showInfo({
+        title: t('common.error'),
+        message: t('profile.reauthUnsupported'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    const password = reauthPassword.trim();
+    if (!password) {
+      showInfo({
+        title: t('common.error'),
+        message: t('auth.fillAllFields'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    setAccountActionLoading(true);
+    try {
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+
+      const cleanup = await deleteUserAccountKeepRecipes(user.uid);
+      if (!cleanup.success) {
+        showInfo({
+          title: t('common.error'),
+          message: cleanup.error ?? t('common.unknownError'),
+          confirmText: t('common.close'),
+        });
+        return;
+      }
+
+      await deleteUser(user);
+      setReauthModalVisible(false);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('common.unknownError');
+      showInfo({
+        title: t('common.error'),
+        message,
+        confirmText: t('common.close'),
+      });
+    } finally {
+      setAccountActionLoading(false);
     }
   };
 
@@ -159,6 +330,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
     return <ProfileSkeleton />;
   }
 
+  const avatarSource =
+    profilePhotoDraft
+      ? { uri: profilePhotoDraft }
+      : profile?.photoUrl
+        ? { uri: profile.photoUrl }
+        : require('@assets/user.jpg');
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.tertiary }]}>
@@ -173,20 +351,83 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.profileSection, { backgroundColor: colors.tertiary }]}>
-          <View style={[styles.avatarContainer, { borderColor: colors.primary, backgroundColor: colors.background }]}>
-            <Image 
-              style={styles.avatar} 
-              source={require('@assets/user.jpg')} 
+          <AnimatedPressable
+            style={[styles.avatarContainer, { borderColor: colors.primary, backgroundColor: colors.background }]}
+            pressableStyle={styles.avatarContainerInner}
+            onPress={() => {
+              if (!isEditingProfile) return;
+              setCameraVisible(true);
+            }}
+            scaleValue={0.98}
+          >
+            <Image style={styles.avatar} source={avatarSource as any} />
+            {isEditingProfile && (
+              <View style={[styles.avatarEditBadge, { backgroundColor: colors.background }]}>
+                <Ionicons name="camera-outline" size={16} color={colors.primary} />
+              </View>
+            )}
+          </AnimatedPressable>
+          
+          {isEditingProfile ? (
+            <TextInput
+              value={profileNameDraft}
+              onChangeText={setProfileNameDraft}
+              style={[styles.profileNameInput, { color: colors.text, borderColor: colors.border }]}
+              placeholder={t('auth.fullName')}
+              placeholderTextColor={colors.textLight}
             />
-          </View>
+          ) : (
+            <Text style={[styles.username, { color: colors.text }]}>
+              {profile?.name || profile?.username || t('profile.anonymous')}
+            </Text>
+          )}
           
-          <Text style={[styles.username, { color: colors.text }]}>
-            {profile?.username || profile?.name || t('profile.anonymous')}
-          </Text>
-          
-          <Text style={[styles.bio, { color: colors.textLight }]}>
-            {profile?.bio || t('profile.defaultBio')}
-          </Text>
+          {isEditingProfile ? (
+            <TextInput
+              value={profileBioDraft}
+              onChangeText={setProfileBioDraft}
+              style={[styles.profileBioInput, { color: colors.text, borderColor: colors.border }]}
+              placeholder={t('profile.defaultBio')}
+              placeholderTextColor={colors.textLight}
+              multiline
+            />
+          ) : (
+            <Text style={[styles.bio, { color: colors.textLight }]}>
+              {profile?.bio || t('profile.defaultBio')}
+            </Text>
+          )}
+
+          {isEditingProfile ? (
+            <View style={styles.editActionsRow}>
+              <AnimatedPressable
+                style={[styles.editActionButton, styles.editCancelButton, { borderColor: colors.border }]}
+                onPress={handleCancelEditProfile}
+                disabled={savingProfile}
+                scaleValue={0.96}
+              >
+                <Text style={[styles.editCancelText, { color: colors.text }]}>{t('common.cancel')}</Text>
+              </AnimatedPressable>
+              <AnimatedPressable
+                style={[styles.editActionButton, styles.editSaveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSaveProfile}
+                disabled={savingProfile}
+                scaleValue={0.96}
+              >
+                <Text style={[styles.editSaveText, { color: colors.background }]}>{t('common.save')}</Text>
+              </AnimatedPressable>
+            </View>
+          ) : (
+            <AnimatedPressable
+              style={[styles.editProfileButton, { backgroundColor: colors.primary }]}
+              onPress={handleStartEditProfile}
+              scaleValue={0.96}
+            >
+              <View style={styles.editProfileContent}>
+                <Ionicons name="create-outline" size={16} color={colors.background} />
+                <Text style={[styles.editProfileText, { color: colors.background }]}>{t('profile.editProfile')}</Text>
+              </View>
+            </AnimatedPressable>
+          )}
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
@@ -361,6 +602,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
               <Ionicons name="calendar-outline" size={20} color={colors.primary} />
               <Text style={[styles.infoText, { color: colors.text }]}>{t('profile.memberSince')}</Text>
             </View>
+
+            <AnimatedPressable
+              onPress={handlePauseAccountPress}
+              disabled={accountActionLoading}
+              scaleValue={0.98}
+              pressableStyle={[styles.infoRow, { backgroundColor: colors.tertiary, opacity: accountActionLoading ? 0.6 : 1 }]}
+            >
+              <Ionicons name="pause-circle-outline" size={20} color={colors.primary} />
+              <Text style={[styles.infoText, { color: colors.text }]}>{t('profile.pauseAccount')}</Text>
+            </AnimatedPressable>
+
+            <AnimatedPressable
+              onPress={handleDeleteAccountPress}
+              disabled={accountActionLoading}
+              scaleValue={0.98}
+              pressableStyle={[styles.infoRow, { backgroundColor: colors.tertiary, opacity: accountActionLoading ? 0.6 : 1 }]}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.primary} />
+              <Text style={[styles.infoText, { color: colors.primary }]}>{t('profile.deleteAccount')}</Text>
+            </AnimatedPressable>
           </View>
         )}
       </ScrollView>
@@ -488,6 +749,76 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
         visible={showThemeSelector}
         onClose={() => setShowThemeSelector(false)}
       />
+
+      <Modal visible={cameraVisible} animationType="slide" onRequestClose={() => setCameraVisible(false)}>
+        <SafeAreaView style={[styles.cameraModal, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+          <View style={styles.cameraHeader}>
+            <AnimatedPressable
+              onPress={() => setCameraVisible(false)}
+              style={styles.cameraCloseButton}
+              pressableStyle={[styles.cameraCloseButtonInner, { backgroundColor: colors.tertiary }]}
+              scaleValue={0.9}
+            >
+              <Ionicons name="close" size={26} color={colors.text} />
+            </AnimatedPressable>
+          </View>
+          <View style={styles.cameraBody}>
+            <CameraView
+              onPhotoCaptured={(uri) => {
+                setProfilePhotoDraft(uri);
+                setCameraVisible(false);
+              }}
+            />
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={reauthModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReauthModalVisible(false)}
+      >
+        <View style={styles.settingsOverlay}>
+          <View style={[styles.logoutModal, { backgroundColor: colors.background }]}>
+            <View style={[styles.logoutIconContainer, { backgroundColor: colors.tertiary }]}>
+              <Ionicons name="shield-checkmark-outline" size={30} color={colors.primary} />
+            </View>
+            <Text style={[styles.logoutTitle, { color: colors.text }]}>{t('profile.reauthTitle')}</Text>
+            <Text style={[styles.logoutDescription, { color: colors.textLight }]}>{t('profile.reauthMessage')}</Text>
+
+            <TextInput
+              value={reauthPassword}
+              onChangeText={setReauthPassword}
+              placeholder={t('auth.password')}
+              placeholderTextColor={colors.textLight}
+              secureTextEntry
+              editable={!accountActionLoading}
+              style={[styles.reauthInput, { color: colors.text, borderColor: colors.border }]}
+            />
+
+            <View style={styles.logoutActions}>
+              <AnimatedPressable
+                style={[styles.logoutActionButton, styles.logoutCancelButton, { borderColor: colors.border }]}
+                onPress={() => setReauthModalVisible(false)}
+                disabled={accountActionLoading}
+                scaleValue={0.96}
+              >
+                <Text style={[styles.logoutCancelText, { color: colors.text }]}>{t('common.cancel')}</Text>
+              </AnimatedPressable>
+              <AnimatedPressable
+                style={[styles.logoutActionButton, { backgroundColor: colors.primary }]}
+                onPress={handleConfirmDeleteAccount}
+                disabled={accountActionLoading}
+                scaleValue={0.96}
+              >
+                <Text style={[styles.logoutConfirmText, { color: colors.background }]}>{t('common.confirm')}</Text>
+              </AnimatedPressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {infoModal}
     </View>
   );
 });
@@ -527,15 +858,48 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     padding: 3,
   },
+  avatarContainerInner: {
+    flex: 1,
+    borderRadius: 50,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatar: {
     width: '100%',
     height: '100%',
     borderRadius: 50,
   },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   username: {
     fontFamily: FONTS.bold,
     fontSize: 22,
     marginTop: 12,
+  },
+  profileNameInput: {
+    marginTop: 12,
+    width: '80%',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    textAlign: 'center',
   },
   bio: {
     fontFamily: FONTS.regular,
@@ -543,6 +907,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 40,
+  },
+  profileBioInput: {
+    marginTop: 8,
+    width: '85%',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    textAlign: 'center',
+    minHeight: 64,
+  },
+  editProfileButton: {
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 18,
+  },
+  editProfileContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editProfileText: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+  },
+  editActionsRow: {
+    flexDirection: 'row',
+    width: '80%',
+    gap: 12,
+    marginTop: 14,
+  },
+  editActionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editCancelButton: {
+    borderWidth: 1,
+  },
+  editSaveButton: {},
+  editCancelText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+  },
+  editSaveText: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
   },
   statsRow: {
     flexDirection: 'row',
@@ -699,6 +1115,7 @@ const styles = StyleSheet.create({
   infoSection: {
     padding: 24,
     gap: 16,
+    paddingBottom: 120,
   },
   infoRow: {
     flexDirection: 'row',
@@ -831,6 +1248,40 @@ const styles = StyleSheet.create({
   logoutConfirmText: {
     fontFamily: FONTS.bold,
     fontSize: 14,
+  },
+  reauthInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    marginBottom: 18,
+  },
+  cameraModal: {
+    flex: 1,
+  },
+  cameraHeader: {
+    height: 56,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  cameraCloseButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraCloseButtonInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraBody: {
+    flex: 1,
   },
 });
 

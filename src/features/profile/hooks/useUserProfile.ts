@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
 
 export interface UserProfile {
@@ -8,6 +8,7 @@ export interface UserProfile {
   name?: string;
   email?: string;
   bio?: string;
+  photoUrl?: string;
 }
 
 export const useUserProfile = (userId?: string) => {
@@ -16,21 +17,28 @@ export const useUserProfile = (userId?: string) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setProfile(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const snapshot = await getDoc(doc(db, 'users', userId));
+    setLoading(true);
+    const unsubscribe = onSnapshot(
+      doc(db, 'users', userId),
+      (snapshot) => {
         setProfile(snapshot.exists() ? (snapshot.data() as UserProfile) : null);
-      } catch (err) {
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
         setLoading(false);
       }
-    };
+    );
 
-    fetchProfile();
+    return unsubscribe;
   }, [userId]);
 
   return { profile, loading, error };

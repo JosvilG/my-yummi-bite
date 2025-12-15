@@ -659,7 +659,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
       {selectionMode && selectedRecipes.size > 0 && (
         <View style={[styles.selectionActionBar, { backgroundColor: colors.primary }]}>
           <AnimatedPressable
-            style={styles.selectionActionButton}
+            pressableStyle={styles.selectionActionButton}
             onPress={handleOpenCategoryModal}
             scaleValue={0.92}
           >
@@ -811,11 +811,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
   },
   emptyTitle: {
     fontSize: 20,
