@@ -31,6 +31,8 @@ import {
   isPublishedFavoriteRecipeSaved,
   togglePublishedFavoriteRecipe,
 } from '@/features/recipes/services/favoriteService';
+import ReportReasonModal, { type ReportReasonKey } from '@/shared/components/ReportReasonModal';
+import { reportRecipe } from '@/features/recipes/services/reportService';
 
 export type PublishedRecipeDetailScreenProps = NativeStackScreenProps<MainStackParamList, 'PublishedInfo'>;
 
@@ -50,6 +52,8 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
   const [favorited, setFavorited] = useState(false);
   const [favoriting, setFavoriting] = useState(false);
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   const canLike = !!user?.uid;
   const canFavorite = !!user?.uid;
@@ -144,6 +148,37 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
   };
 
   const handleGoBack = () => navigation.goBack();
+
+  const handleReportSubmit = async (reason: ReportReasonKey) => {
+    if (!user?.uid) {
+      showInfo({
+        title: t('common.error'),
+        message: t('errors.loginRequiredToReport'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    setReporting(true);
+    const result = await reportRecipe(user.uid, { type: 'published', id, title: recipe?.title }, reason);
+    setReporting(false);
+    setReportVisible(false);
+
+    if (!result.success) {
+      showInfo({
+        title: t('common.error'),
+        message: result.error ?? t('common.unknownError'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    showInfo({
+      title: t('report.successTitle'),
+      message: t('report.successMessage'),
+      confirmText: t('common.close'),
+    });
+  };
 
   const handleDelete = async () => {
     if (!recipe) return;
@@ -326,6 +361,10 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
             <Ionicons name="share-outline" size={24} color={colors.text} />
           </Pressable>
 
+          <Pressable onPress={() => setReportVisible(true)} style={styles.headerButton}>
+            <Ionicons name="flag-outline" size={22} color={colors.text} />
+          </Pressable>
+
           <Pressable
             onPress={handleToggleLike}
             style={[styles.headerButton, styles.likeHeaderButton]}
@@ -460,6 +499,12 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
           )}
         </View>
       </ScrollView>
+      <ReportReasonModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        onSubmit={handleReportSubmit}
+        submitting={reporting}
+      />
       {modal}
     </View>
   );

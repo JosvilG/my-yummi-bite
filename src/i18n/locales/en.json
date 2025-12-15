@@ -79,6 +79,7 @@
     "loginRequiredToSave": "You need to log in to save recipes.",
     "loginRequiredToPublish": "You need to log in to publish recipes.",
     "loginRequiredToLike": "You need to log in to like recipes.",
+    "loginRequiredToReport": "You need to log in to report recipes.",
     "recipeNameRequired": "Please add a recipe name.",
     "timeRequired": "Please add the time needed.",
     "difficultyRequired": "Please choose the difficulty.",
@@ -89,6 +90,20 @@
     "favoriteUpdateFailed": "Could not update favorites.",
     "shareFailed": "Could not share the recipe.",
     "likeUpdateFailed": "Could not update like."
+  },
+  "report": {
+    "title": "Report recipe",
+    "message": "Select a reason for your report.",
+    "submit": "Report",
+    "successTitle": "Reported",
+    "successMessage": "Thanks for helping keep the community safe.",
+    "reasons": {
+      "spam": "Spam",
+      "inappropriate": "Inappropriate content",
+      "misleading": "Misleading information",
+      "copyright": "Copyright infringement",
+      "other": "Other"
+    }
   },
   "social": {
     "create": {

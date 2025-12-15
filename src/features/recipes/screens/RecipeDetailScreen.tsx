@@ -24,6 +24,8 @@ import type { MainStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import { captureException } from '@/lib/sentry';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
+import ReportReasonModal, { type ReportReasonKey } from '@/shared/components/ReportReasonModal';
+import { reportRecipe } from '../services/reportService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -54,6 +56,8 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ingredients' | 'instructions'>('ingredients');
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   const favoriteDoc = favorites.find(fav => fav.id === id);
   const isFavorite = !!favoriteDoc;
@@ -139,6 +143,41 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
         log.debug('Ingredient checked', { ingredientId, recipeId: id });
       }
       return newSet;
+    });
+  };
+
+  const handleReportSubmit = async (reason: ReportReasonKey) => {
+    if (!user?.uid) {
+      showInfo({
+        title: t('common.error'),
+        message: t('errors.loginRequiredToReport'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    setReporting(true);
+    const target = isCustomRecipe && customDoc
+      ? { type: 'custom' as const, id: customDoc.docId, title: customDoc.title }
+      : { type: 'spoonacular' as const, id: id, title: recipe?.title };
+
+    const result = await reportRecipe(user.uid, target, reason);
+    setReporting(false);
+    setReportVisible(false);
+
+    if (!result.success) {
+      showInfo({
+        title: t('common.error'),
+        message: result.error ?? t('common.unknownError'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+
+    showInfo({
+      title: t('report.successTitle'),
+      message: t('report.successMessage'),
+      confirmText: t('common.close'),
     });
   };
 
@@ -296,6 +335,9 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
           <Pressable onPress={handleShare} style={styles.headerButton}>
             <Ionicons name="share-outline" size={24} color={colors.text} />
           </Pressable>
+          <Pressable onPress={() => setReportVisible(true)} style={styles.headerButton}>
+            <Ionicons name="flag-outline" size={22} color={colors.text} />
+          </Pressable>
         </View>
       </View>
 
@@ -427,6 +469,12 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
           </View>
         </View>
       </ScrollView>
+      <ReportReasonModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        onSubmit={handleReportSubmit}
+        submitting={reporting}
+      />
       {modal}
     </View>
   );
