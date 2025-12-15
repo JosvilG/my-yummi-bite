@@ -33,6 +33,8 @@ import {
 } from '@/features/recipes/services/favoriteService';
 import ReportReasonModal, { type ReportReasonKey } from '@/shared/components/ReportReasonModal';
 import { reportRecipe } from '@/features/recipes/services/reportService';
+import { useUserProfile } from '@/features/profile/hooks/useUserProfile';
+import { setFollowUser, subscribeToFollowingStatus } from '@/features/profile/services/followService';
 
 export type PublishedRecipeDetailScreenProps = NativeStackScreenProps<MainStackParamList, 'PublishedInfo'>;
 
@@ -54,10 +56,17 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
   const [reportVisible, setReportVisible] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
+
+  const authorId = recipe?.authorId;
+  const authorIsAnonymous = !authorId || authorId === 'anonymous';
+  const { profile: authorProfile } = useUserProfile(authorIsAnonymous ? undefined : authorId);
 
   const canLike = !!user?.uid;
   const canFavorite = !!user?.uid;
   const canDeletePublished = !!user?.uid && !!recipe && recipe.authorId === user.uid;
+  const canFollowAuthor = !!user?.uid && !!authorId && !authorIsAnonymous && authorId !== user?.uid;
 
   useEffect(() => {
     let active = true;
@@ -98,6 +107,14 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
       active = false;
     };
   }, [id, user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || !authorId || authorIsAnonymous || authorId === user.uid) {
+      setIsFollowingAuthor(false);
+      return;
+    }
+    return subscribeToFollowingStatus(user.uid, authorId, setIsFollowingAuthor);
+  }, [authorId, authorIsAnonymous, user?.uid]);
 
   const ingredientsCount = useMemo(() => recipe?.ingredients?.length ?? 0, [recipe?.ingredients]);
   const stepsCount = useMemo(() => recipe?.steps?.length ?? 0, [recipe?.steps]);
@@ -148,6 +165,30 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
   };
 
   const handleGoBack = () => navigation.goBack();
+
+  const handleToggleFollow = async () => {
+    if (!user?.uid) {
+      showInfo({
+        title: t('common.error'),
+        message: t('errors.loginRequiredToFollow'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+    if (!authorId || authorIsAnonymous || authorId === user.uid) return;
+
+    setFollowingLoading(true);
+    const result = await setFollowUser(user.uid, authorId, !isFollowingAuthor);
+    setFollowingLoading(false);
+
+    if (!result.success) {
+      showInfo({
+        title: t('common.error'),
+        message: result.error ?? t('common.unknownError'),
+        confirmText: t('common.close'),
+      });
+    }
+  };
 
   const handleReportSubmit = async (reason: ReportReasonKey) => {
     if (!user?.uid) {
@@ -395,6 +436,48 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
 
         <View style={[styles.contentCard, { backgroundColor: colors.background }]}>
           <Text style={[styles.recipeTitle, { color: colors.text }]}>{recipe.title}</Text>
+          <View style={styles.authorRow}>
+            <View style={styles.authorLeft}>
+              <Image
+                source={
+                  authorIsAnonymous
+                    ? require('@assets/user.jpg')
+                    : authorProfile?.photoUrl
+                      ? { uri: authorProfile.photoUrl }
+                      : require('@assets/user.jpg')
+                }
+                style={styles.authorAvatar}
+              />
+              <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
+                {authorIsAnonymous
+                  ? t('profile.anonymous')
+                  : authorProfile?.name || authorProfile?.username || t('profile.anonymous')}
+              </Text>
+            </View>
+            {canFollowAuthor && (
+              <Pressable
+                onPress={handleToggleFollow}
+                disabled={followingLoading}
+                style={[
+                  styles.followButton,
+                  {
+                    backgroundColor: isFollowingAuthor ? colors.tertiary : colors.primary,
+                    borderColor: colors.primary,
+                    opacity: followingLoading ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.followButtonText,
+                    { color: isFollowingAuthor ? colors.primary : colors.background },
+                  ]}
+                >
+                  {isFollowingAuthor ? t('profile.followingAction') : t('profile.followAction')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
           <Text style={[styles.metaText, { color: colors.textLight }]}>
             {ingredientsCount} {t('recipe.ingredients')} · {stepsCount} {t('recipe.instructions')}
           </Text>
@@ -596,6 +679,39 @@ const styles = StyleSheet.create({
     fontSize: 22,
     textAlign: 'center',
     marginBottom: 10,
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 12,
+  },
+  authorLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  authorAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  authorName: {
+    flex: 1,
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+  },
+  followButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  followButtonText: {
+    fontFamily: FONTS.bold,
+    fontSize: 12,
   },
   metaText: {
     fontFamily: FONTS.regular,

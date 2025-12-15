@@ -7,7 +7,7 @@ import {
   Text, 
   View 
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FONTS } from '@/constants/theme';
@@ -65,14 +65,22 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublished
     return null;
   }
 
-  const calories = isPublishedRecipe(recipe) ? 0 : Math.round(recipe?.nutrition?.nutrients?.[0]?.amount || 0);
   const imageSource = getHighResImageUrl(recipe);
-  const summary = isPublishedRecipe(recipe)
-    ? `${recipe.ingredients?.length ?? 0} ingredientes - ${recipe.steps?.length ?? 0} pasos`
-    : (recipe.summary?.replace(/<[^>]*>/g, '').slice(0, 120) ?? '') + '...';
   const title = recipe.title ?? '';
   const likesCount = isPublishedRecipe(recipe) ? recipe.likesCount ?? 0 : 0;
   const likedByMe = isPublishedRecipe(recipe) ? !!recipe.likedByMe : false;
+  const readyInMinutes = (recipe.readyInMinutes ?? 0) as number;
+  const difficultyLevel = (() => {
+    if (isPublishedRecipe(recipe)) {
+      if (recipe.difficulty === 'easy') return 1;
+      if (recipe.difficulty === 'medium') return 2;
+      if (recipe.difficulty === 'hard') return 3;
+    }
+    if (!readyInMinutes) return 0;
+    if (readyInMinutes <= 20) return 1;
+    if (readyInMinutes <= 45) return 2;
+    return 3;
+  })();
 
   const handleInfoPress = () => {
     if (isPublishedRecipe(recipe)) {
@@ -123,6 +131,13 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublished
       <View style={[styles.card, { backgroundColor: colors.background }]}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: imageSource }} style={styles.recipeImage} />
+          <Pressable
+            onPress={() => setReportVisible(true)}
+            style={[styles.reportBadge, { backgroundColor: colors.background, borderColor: colors.border }]}
+            hitSlop={10}
+          >
+            <Ionicons name="flag-outline" size={18} color={colors.teal} />
+          </Pressable>
         </View>
 
         <View style={styles.infoContainer}>
@@ -146,13 +161,31 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublished
             )}
           </View>
 
-          {!isPublishedRecipe(recipe) && (
-            <Text style={[styles.calories, { color: colors.accent }]}>{calories} kcal</Text>
-          )}
-          
-          <Text numberOfLines={4} style={[styles.summary, { color: colors.textLight }]}>
-            {summary}
-          </Text>
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Ionicons name="time-outline" size={16} color={colors.textLight} />
+              <Text style={[styles.metaText, { color: colors.textLight }]}>
+                {readyInMinutes ? `${readyInMinutes} ${t('home.minutes')}` : `-- ${t('home.minutes')}`}
+              </Text>
+            </View>
+            <View style={[styles.metaDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.metaItem}>
+              {difficultyLevel > 0 ? (
+                <View style={styles.hatsRow}>
+                  {Array.from({ length: difficultyLevel }).map((_, index) => (
+                    <MaterialCommunityIcons
+                      key={`hat-${index}`}
+                      name="chef-hat"
+                      size={16}
+                      color={colors.textLight}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <Text style={[styles.metaText, { color: colors.textLight }]}>--</Text>
+              )}
+            </View>
+          </View>
 
           <View style={styles.actions}>
             <AnimatedPressable 
@@ -179,13 +212,6 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublished
               <Ionicons name="heart" size={28} color={colors.teal} />
             </AnimatedPressable>
 
-            <AnimatedPressable
-              style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.teal }]}
-              onPress={() => setReportVisible(true)}
-              scaleValue={0.85}
-            >
-              <Ionicons name="flag-outline" size={24} color={colors.teal} />
-            </AnimatedPressable>
           </View>
         </View>
       </View>
@@ -227,6 +253,22 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  reportBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   infoContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -256,24 +298,36 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     fontSize: 13,
   },
-  calories: {
-    fontFamily: FONTS.medium,
-    fontSize: 15,
-    marginTop: 4,
-  },
-  summary: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    textAlign: 'center',
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
     marginTop: 12,
-    lineHeight: 18,
-    paddingHorizontal: 8,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metaDivider: {
+    width: 1,
+    height: 16,
+  },
+  metaText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+  },
+  hatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 18,
     gap: 20,
   },
   actionButton: {

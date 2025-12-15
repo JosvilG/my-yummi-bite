@@ -18,6 +18,7 @@ import { useColors } from '@/shared/hooks/useColors';
 import type { RecipeSummary } from '../services/spoonacularService';
 import {
   getPublishedRecipes,
+  getPublishedRecipesByAuthors,
   hasUserLikedPublishedRecipe,
   setPublishedRecipeLike,
   setPublishedRecipeSave,
@@ -26,6 +27,7 @@ import {
 import { addBreadcrumb, captureException } from '@/lib/sentry';
 import { log } from '@/lib/logger';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
+import { getFollowingUserIds } from '@/features/profile/services/followService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -74,6 +76,7 @@ const HomeScreen: React.FC = observer(() => {
 
   const swiperRef = useRef<Swiper<HomeCard>>(null);
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null);
+  const [followedPublishedRecipes, setFollowedPublishedRecipes] = useState<PublishedRecipeDoc[]>([]);
   const [publishedRecipes, setPublishedRecipes] = useState<PublishedRecipeDoc[]>([]);
   const [publishedLoading, setPublishedLoading] = useState(false);
   const [publishedReloadNonce, setPublishedReloadNonce] = useState(0);
@@ -100,30 +103,48 @@ const HomeScreen: React.FC = observer(() => {
 
     const loadPublished = async () => {
       setPublishedLoading(true);
-      const result = await getPublishedRecipes(10);
-      if (!active) return;
-
-      if (!result.success || !result.recipes) {
-        setPublishedRecipes([]);
-        setPublishedLoading(false);
-        return;
-      }
 
       if (!user?.uid) {
-        setPublishedRecipes(result.recipes);
+        const result = await getPublishedRecipes(10);
+        if (!active) return;
+        setFollowedPublishedRecipes([]);
+        setPublishedRecipes(result.success && result.recipes ? result.recipes : []);
         setPublishedLoading(false);
         return;
       }
 
-      const likedResults = await Promise.all(
-        result.recipes.map(async (r) => {
-          const liked = await hasUserLikedPublishedRecipe(r.id, user.uid);
-          return { ...r, likedByMe: liked.success ? !!liked.liked : false };
-        })
-      );
-
+      const following = await getFollowingUserIds(user.uid, 10);
       if (!active) return;
-      setPublishedRecipes(likedResults);
+      const followingIds = following.success && following.userIds ? following.userIds : [];
+
+      const [followedResult, communityResult] = await Promise.all([
+        getPublishedRecipesByAuthors(followingIds, 10),
+        getPublishedRecipes(10),
+      ]);
+      if (!active) return;
+
+      const followedRecipes = followedResult.success && followedResult.recipes ? followedResult.recipes : [];
+      const communityRecipes = communityResult.success && communityResult.recipes ? communityResult.recipes : [];
+
+      const followedIds = new Set(followedRecipes.map(r => r.id));
+      const communityWithoutFollowed = communityRecipes.filter(r => !followedIds.has(r.id) && !followingIds.includes(r.authorId));
+
+      const withLikes = async (list: PublishedRecipeDoc[]) =>
+        Promise.all(
+          list.map(async (r) => {
+            const liked = await hasUserLikedPublishedRecipe(r.id, user.uid);
+            return { ...r, likedByMe: liked.success ? !!liked.liked : false };
+          })
+        );
+
+      const [likedFollowed, likedCommunity] = await Promise.all([
+        withLikes(followedRecipes),
+        withLikes(communityWithoutFollowed),
+      ]);
+      if (!active) return;
+
+      setFollowedPublishedRecipes(likedFollowed);
+      setPublishedRecipes(likedCommunity);
       setPublishedLoading(false);
     };
 
@@ -153,16 +174,11 @@ const HomeScreen: React.FC = observer(() => {
 
   const candidateCards: HomeCard[] = useMemo(() => {
     if (user?.uid && !favoritesHydrated) return [];
-    const filteredPublished = publishedRecipes.filter(r => !favoritePublishedIds.has(r.id));
+    const filteredFollowed = followedPublishedRecipes.filter(r => !favoritePublishedIds.has(r.id));
+    const filteredCommunity = publishedRecipes.filter(r => !favoritePublishedIds.has(r.id));
     const filteredSpoonacular = recipes.filter(r => !favoriteSpoonacularIds.has(r.id));
-    const merged: HomeCard[] = [];
-    const maxLen = Math.max(filteredSpoonacular.length, filteredPublished.length);
-    for (let i = 0; i < maxLen; i++) {
-      if (filteredPublished[i]) merged.push(filteredPublished[i]);
-      if (filteredSpoonacular[i]) merged.push(filteredSpoonacular[i]);
-    }
-    return merged;
-  }, [favoritePublishedIds, favoriteSpoonacularIds, favoritesHydrated, publishedRecipes, recipes, user?.uid]);
+    return [...filteredFollowed, ...filteredCommunity, ...filteredSpoonacular];
+  }, [favoritePublishedIds, favoriteSpoonacularIds, favoritesHydrated, followedPublishedRecipes, publishedRecipes, recipes, user?.uid]);
 
   useEffect(() => {
     if (deckCards.length > 0) {
@@ -291,6 +307,18 @@ const HomeScreen: React.FC = observer(() => {
       )
     );
 
+    setFollowedPublishedRecipes(current =>
+      current.map(r =>
+        r.id === publishedId
+          ? {
+              ...r,
+              likedByMe: !liked,
+              likesCount: Math.max(0, (r.likesCount ?? 0) + (liked ? -1 : 1)),
+            }
+          : r
+      )
+    );
+
     const result = await setPublishedRecipeLike(publishedId, user.uid, !liked);
     if (result.success) return;
 
@@ -307,6 +335,18 @@ const HomeScreen: React.FC = observer(() => {
     );
 
     setPublishedRecipes(current =>
+      current.map(r =>
+        r.id === publishedId
+          ? {
+              ...r,
+              likedByMe: liked,
+              likesCount: Math.max(0, (r.likesCount ?? 0) + (liked ? 1 : -1)),
+            }
+          : r
+      )
+    );
+
+    setFollowedPublishedRecipes(current =>
       current.map(r =>
         r.id === publishedId
           ? {
@@ -340,7 +380,7 @@ const HomeScreen: React.FC = observer(() => {
     deckPreparing ||
     (user?.uid ? !favoritesHydrated : false) ||
     (recipeStore.loading && recipes.length === 0) ||
-    (publishedLoading && publishedRecipes.length === 0);
+    (publishedLoading && (publishedRecipes.length === 0 && followedPublishedRecipes.length === 0));
   const showEmptyState = !isLoading && candidateCards.length === 0 && deckCards.length === 0 && refillAttempted;
   const showDeck = deckCards.length > 0;
   const showLoaderFallback = !showEmptyState && !showDeck;

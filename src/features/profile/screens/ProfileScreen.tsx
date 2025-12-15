@@ -431,12 +431,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text }]}>1.2k</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{profile?.followersCount ?? 0}</Text>
               <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.followers')}</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text }]}>450</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{profile?.followingCount ?? 0}</Text>
               <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.following')}</Text>
             </View>
           </View>

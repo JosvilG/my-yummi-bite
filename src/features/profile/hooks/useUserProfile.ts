@@ -9,6 +9,9 @@ export interface UserProfile {
   email?: string;
   bio?: string;
   photoUrl?: string;
+  followersCount?: number;
+  followingCount?: number;
+  accountStatus?: 'active' | 'paused';
 }
 
 export const useUserProfile = (userId?: string) => {

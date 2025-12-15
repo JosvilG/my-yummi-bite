@@ -111,6 +111,7 @@ export type PublishedRecipeDoc = {
   savesCount?: number;
   sharesCount?: number;
   likedByMe?: boolean;
+  createdAt?: unknown;
 };
 
 export const getPublishedRecipes = async (
@@ -129,6 +130,44 @@ export const getPublishedRecipes = async (
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     captureException(error as Error, { operation: 'getPublishedRecipes' });
+    return { success: false, error: errorMessage };
+  }
+};
+
+export const getPublishedRecipesByAuthors = async (
+  authorIds: string[],
+  count = 10
+): Promise<{ success: boolean; recipes?: PublishedRecipeDoc[]; error?: string }> => {
+  try {
+    const ids = (authorIds ?? []).filter(Boolean).slice(0, 10);
+    if (ids.length === 0) return { success: true, recipes: [] };
+
+    let snapshot;
+    try {
+      const q = query(
+        collection(db, 'PublishedRecipes'),
+        where('authorId', 'in', ids),
+        orderBy('createdAt', 'desc'),
+        limit(count)
+      );
+      snapshot = await getDocs(q);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      log.warn('getPublishedRecipesByAuthors: falling back query without orderBy', { authorIds: ids, error: message });
+      captureException(error as Error, { operation: 'getPublishedRecipesByAuthors_orderBy' });
+      const q = query(collection(db, 'PublishedRecipes'), where('authorId', 'in', ids), limit(count));
+      snapshot = await getDocs(q);
+    }
+
+    const recipes: PublishedRecipeDoc[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data() as Omit<PublishedRecipeDoc, 'id'>;
+      recipes.push({ id: docSnap.id, ...data });
+    });
+    return { success: true, recipes };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    captureException(error as Error, { operation: 'getPublishedRecipesByAuthors' });
     return { success: false, error: errorMessage };
   }
 };
