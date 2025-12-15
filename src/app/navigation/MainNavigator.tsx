@@ -4,9 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import CustomTabBar from './CustomTabBar';
 import HomeScreen from '@/features/recipes/screens/HomeScreen';
 import SaveScreen from '@/features/recipes/screens/SaveScreen';
-import AddScreen from '@/features/recipes/screens/AddScreen';
+import CreatePostScreen from '@/features/social/screens/CreatePostScreen';
 import ProfileScreen from '@/features/profile/screens/ProfileScreen';
 import RecipeDetailScreen from '@/features/recipes/screens/RecipeDetailScreen';
+import PublishedRecipeDetailScreen from '@/features/social/screens/PublishedRecipeDetailScreen';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -23,7 +24,7 @@ const TabNavigator: React.FC = () => {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Save" component={SaveScreen} />
-      <Tab.Screen name="Add" component={AddScreen} />
+      <Tab.Screen name="Add" component={CreatePostScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -40,6 +41,13 @@ const MainNavigator: React.FC = () => {
       <Stack.Screen
         name="Info"
         component={RecipeDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="PublishedInfo"
+        component={PublishedRecipeDetailScreen}
         options={{
           headerShown: false,
         }}

@@ -6,6 +6,10 @@ import Constants from 'expo-constants';
  */
 export const initSentry = (): void => {
   const dsn = Constants.expoConfig?.extra?.sentryDsn;
+  const appEnv =
+    Constants.expoConfig?.extra?.EXPO_PUBLIC_APP_ENV ||
+    process.env.EXPO_PUBLIC_APP_ENV ||
+    (__DEV__ ? 'development' : 'production');
 
   // Skip initialization in development if DSN is not provided
   if (__DEV__ && !dsn) {
@@ -31,7 +35,7 @@ export const initSentry = (): void => {
     tracesSampleRate: __DEV__ ? 1.0 : 0.2,
     
     // Environment detection
-    environment: __DEV__ ? 'development' : 'production',
+    environment: appEnv,
     
     // Release tracking
     release: Constants.expoConfig?.version,

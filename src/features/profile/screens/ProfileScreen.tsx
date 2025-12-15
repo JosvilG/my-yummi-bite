@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Dimensions,
   FlatList, 
@@ -30,6 +30,7 @@ import { FONTS } from '@/constants/theme';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import type { FavoriteRecipeDoc } from '@/features/recipes/services/favoriteService';
+import { getPublishedRecipesByAuthor, type PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
@@ -53,6 +54,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [publishedByMe, setPublishedByMe] = useState<PublishedRecipeDoc[]>([]);
+  const [publishedByMeLoading, setPublishedByMeLoading] = useState(false);
+  const [publishedByMeError, setPublishedByMeError] = useState<string | null>(null);
+  const [publishedReloadNonce, setPublishedReloadNonce] = useState(0);
 
   const handleRecipePress = (recipeId: number) => {
     log.info('Navigation to recipe details', { recipeId, from: 'ProfileScreen' });
@@ -90,6 +95,42 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
       case 'dark': return t('settings.darkMode');
       default: return t('settings.autoMode');
     }
+  };
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setPublishedByMe([]);
+      setPublishedByMeLoading(false);
+      setPublishedByMeError(null);
+      return;
+    }
+    if (activeTab !== 'published') return;
+
+    let active = true;
+    const load = async () => {
+      setPublishedByMeLoading(true);
+      const result = await getPublishedRecipesByAuthor(user.uid, 50);
+      if (!active) return;
+      if (!result.success) {
+        setPublishedByMe([]);
+        setPublishedByMeError(result.error ?? t('common.unknownError'));
+        setPublishedByMeLoading(false);
+        return;
+      }
+
+      setPublishedByMe(result.recipes ?? []);
+      setPublishedByMeError(null);
+      setPublishedByMeLoading(false);
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [activeTab, publishedReloadNonce, t, user?.uid]);
+
+  const handlePublishedPress = (publishedId: string) => {
+    navigation.navigate('PublishedInfo', { id: publishedId });
   };
 
   const renderRecipeCard = ({ item }: { item: FavoriteRecipeDoc }) => (
@@ -223,10 +264,46 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
         )}
 
         {activeTab === 'published' && (
-          <View style={styles.emptyState}>
-            <Ionicons name="restaurant-outline" size={48} color={colors.border} />
-            <Text style={[styles.emptyText, { color: colors.textLight }]}>{t('profile.noPublished')}</Text>
-          </View>
+          publishedByMeLoading ? (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyText, { color: colors.textLight }]}>{t('common.loading')}</Text>
+            </View>
+          ) : publishedByMeError ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="alert-circle-outline" size={48} color={colors.border} />
+              <Text style={[styles.emptyText, { color: colors.textLight }]}>{publishedByMeError}</Text>
+              <AnimatedPressable
+                onPress={() => setPublishedReloadNonce(n => n + 1)}
+                style={[styles.retryButton, { backgroundColor: colors.tertiary }]}
+                scaleValue={0.96}
+              >
+                <Text style={[styles.retryText, { color: colors.text }]}>{t('common.retry')}</Text>
+              </AnimatedPressable>
+            </View>
+          ) : publishedByMe.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="restaurant-outline" size={48} color={colors.border} />
+              <Text style={[styles.emptyText, { color: colors.textLight }]}>{t('profile.noPublished')}</Text>
+            </View>
+          ) : (
+            <View style={styles.recipesGrid}>
+              {publishedByMe.map((item) => (
+                <AnimatedPressable
+                  key={item.id}
+                  onPress={() => handlePublishedPress(item.id)}
+                  style={styles.recipeCard}
+                  scaleValue={0.96}
+                >
+                  <View style={[styles.recipeImageContainer, { backgroundColor: colors.tertiary }]}>
+                    <Image source={{ uri: item.imageUrl }} style={styles.recipeImage} />
+                    <View style={[styles.heartBadge, { backgroundColor: colors.background }]}>
+                      <Ionicons name="restaurant" size={14} color={colors.primary} />
+                    </View>
+                  </View>
+                </AnimatedPressable>
+              ))}
+            </View>
+          )
         )}
 
         {activeTab === 'info' && (
@@ -517,6 +594,16 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     fontSize: 14,
     marginTop: 12,
+  },
+  retryButton: {
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  retryText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
   },
   infoSection: {
     padding: 24,

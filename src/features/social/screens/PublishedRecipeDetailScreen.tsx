@@ -1,0 +1,521 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useColors } from '@/shared/hooks/useColors';
+import { FONTS } from '@/constants/theme';
+import type { MainStackParamList } from '@/types/navigation';
+import { useAuth } from '@/app/providers/AuthProvider';
+import RecipeDetailSkeleton from '@/shared/components/RecipeDetailSkeleton';
+import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  getPublishedRecipeById,
+  hasUserLikedPublishedRecipe,
+  setPublishedRecipeLike,
+  type PublishedRecipeDoc,
+} from '../services/publishedRecipeService';
+import {
+  isPublishedFavoriteRecipeSaved,
+  togglePublishedFavoriteRecipe,
+} from '@/features/recipes/services/favoriteService';
+
+export type PublishedRecipeDetailScreenProps = NativeStackScreenProps<MainStackParamList, 'PublishedInfo'>;
+
+const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = ({ route, navigation }) => {
+  const { t } = useTranslation();
+  const colors = useColors();
+  const { user } = useAuth();
+  const { showInfo, modal } = useAppAlertModal();
+  const { id } = route.params;
+
+  const [recipe, setRecipe] = useState<PublishedRecipeDoc | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'ingredients' | 'instructions'>('ingredients');
+  const [likedByMe, setLikedByMe] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [favorited, setFavorited] = useState(false);
+  const [favoriting, setFavoriting] = useState(false);
+
+  const canLike = !!user?.uid;
+  const canFavorite = !!user?.uid;
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+      const result = await getPublishedRecipeById(id);
+      if (!active) return;
+
+      if (!result.success || !result.recipe) {
+        setRecipe(null);
+        setError(result.error ?? t('home.recipeNotFound'));
+        setLoading(false);
+        return;
+      }
+
+      setRecipe(result.recipe);
+      setLikesCount(result.recipe.likesCount ?? 0);
+      setError(null);
+
+      if (user?.uid) {
+        const liked = await hasUserLikedPublishedRecipe(id, user.uid);
+        if (active) setLikedByMe(liked.success ? !!liked.liked : false);
+
+        const saved = await isPublishedFavoriteRecipeSaved(user.uid, id);
+        if (active) setFavorited(saved.success ? !!saved.saved : false);
+      } else {
+        setLikedByMe(false);
+        setFavorited(false);
+      }
+
+      setLoading(false);
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [id, user?.uid]);
+
+  const ingredientsCount = useMemo(() => recipe?.ingredients?.length ?? 0, [recipe?.ingredients]);
+  const stepsCount = useMemo(() => recipe?.steps?.length ?? 0, [recipe?.steps]);
+
+  const getDifficultyText = (readyInMinutes: number) => {
+    if (readyInMinutes <= 20) return t('recipe.easy');
+    if (readyInMinutes <= 45) return t('recipe.medium');
+    return t('recipe.hard');
+  };
+
+  const difficultyLevel = useMemo(() => {
+    if (!recipe) return 0;
+    if (recipe.difficulty === 'easy') return 1;
+    if (recipe.difficulty === 'medium') return 2;
+    if (recipe.difficulty === 'hard') return 3;
+    if (typeof recipe.readyInMinutes !== 'number' || recipe.readyInMinutes <= 0) return 0;
+    const label = getDifficultyText(recipe.readyInMinutes);
+    if (label === t('recipe.easy')) return 1;
+    if (label === t('recipe.medium')) return 2;
+    return 3;
+  }, [recipe, t]);
+
+  const renderDifficultyHats = (level: number) => {
+    if (level <= 0) {
+      return <Text style={[styles.infoText, { color: colors.textLight }]}>--</Text>;
+    }
+    return (
+      <View style={styles.hatsRow}>
+        {Array.from({ length: level }).map((_, index) => (
+          <MaterialCommunityIcons
+            key={`hat-${index}`}
+            name="chef-hat"
+            size={16}
+            color={colors.textLight}
+          />
+        ))}
+      </View>
+    );
+  };
+
+  const handleGoBack = () => navigation.goBack();
+
+  const handleToggleFavorite = async () => {
+    if (!user?.uid || !recipe) {
+      showInfo({ title: t('common.error'), message: t('errors.loginRequiredToSave'), confirmText: t('common.close') });
+      return;
+    }
+
+    if (favoriting) return;
+    setFavoriting(true);
+    const result = await togglePublishedFavoriteRecipe(user.uid, {
+      publishedId: recipe.id,
+      title: recipe.title,
+      imageUrl: recipe.imageUrl,
+      ingredients: recipe.ingredients,
+      steps: recipe.steps,
+      readyInMinutes: recipe.readyInMinutes,
+      difficulty: recipe.difficulty,
+    });
+    setFavoriting(false);
+
+    if (!result.success) {
+      showInfo({
+        title: t('common.error'),
+        message: result.error ?? t('errors.favoriteUpdateFailed'),
+        confirmText: t('common.close'),
+      });
+      return;
+    }
+    setFavorited(!!result.favorited);
+  };
+
+  const handleToggleLike = async () => {
+    if (!user?.uid) return;
+    const nextLiked = !likedByMe;
+    setLikedByMe(nextLiked);
+    setLikesCount(current => Math.max(0, current + (nextLiked ? 1 : -1)));
+
+    const result = await setPublishedRecipeLike(id, user.uid, nextLiked);
+    if (result.success) return;
+
+    setLikedByMe(!nextLiked);
+    setLikesCount(current => Math.max(0, current + (nextLiked ? -1 : 1)));
+  };
+
+  const handleShare = async () => {
+    if (!recipe) return;
+    try {
+      await Share.share({
+        message: recipe.title,
+        url: recipe.imageUrl,
+      });
+    } catch {
+      showInfo({ title: t('common.error'), message: t('errors.shareFailed'), confirmText: t('common.close') });
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.tertiary }]}>
+        <RecipeDetailSkeleton />
+      </View>
+    );
+  }
+
+  if (error || !recipe) {
+    return (
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: colors.error }]}>{error ?? t('home.recipeNotFound')}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.tertiary }]}>
+      <View style={[styles.header, { backgroundColor: colors.tertiary }]}>
+        <Pressable onPress={handleGoBack} style={styles.headerButton}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('recipe.details')}</Text>
+        <View style={styles.headerRight}>
+          <Pressable
+            onPress={handleToggleFavorite}
+            style={styles.headerButton}
+            disabled={!canFavorite}
+          >
+            <Ionicons
+              name={favorited ? 'heart' : 'heart-outline'}
+              size={24}
+              color={favorited ? colors.primary : colors.text}
+            />
+          </Pressable>
+
+          <Pressable onPress={handleShare} style={styles.headerButton}>
+            <Ionicons name="share-outline" size={24} color={colors.text} />
+          </Pressable>
+
+          <Pressable
+            onPress={handleToggleLike}
+            style={[styles.headerButton, styles.likeHeaderButton]}
+            disabled={!canLike}
+          >
+            <View style={styles.likeHeader}>
+              <Ionicons
+                name={likedByMe ? 'thumbs-up' : 'thumbs-up-outline'}
+                size={22}
+                color={likedByMe ? colors.primary : colors.text}
+              />
+              <Text style={[styles.likeHeaderCount, { color: colors.textLight }]}>{likesCount}</Text>
+            </View>
+          </Pressable>
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroSection}>
+          <View style={[styles.imageContainer, { backgroundColor: colors.background }]}>
+            <Image source={{ uri: recipe.imageUrl }} style={styles.recipeImage} />
+          </View>
+        </View>
+
+        <View style={[styles.contentCard, { backgroundColor: colors.background }]}>
+          <Text style={[styles.recipeTitle, { color: colors.text }]}>{recipe.title}</Text>
+          <Text style={[styles.metaText, { color: colors.textLight }]}>
+            {ingredientsCount} {t('recipe.ingredients')} · {stepsCount} {t('recipe.instructions')}
+          </Text>
+
+          <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
+              <Ionicons name="star-outline" size={16} color={colors.textLight} />
+              <Text style={[styles.infoText, { color: colors.textLight }]}>4,8</Text>
+            </View>
+            <View style={[styles.infoDivider, { backgroundColor: colors.tertiary }]} />
+            <View style={styles.infoItem}>
+              <Ionicons name="time-outline" size={16} color={colors.textLight} />
+              <Text style={[styles.infoText, { color: colors.textLight }]}>
+                {typeof recipe.readyInMinutes === 'number' && recipe.readyInMinutes > 0
+                  ? `${recipe.readyInMinutes} ${t('home.minutes')}`
+                  : `-- ${t('home.minutes')}`}
+              </Text>
+            </View>
+            <View style={[styles.infoDivider, { backgroundColor: colors.tertiary }]} />
+            <View style={styles.infoItem}>{renderDifficultyHats(difficultyLevel)}</View>
+          </View>
+
+          <View style={[styles.tabsContainer, { backgroundColor: colors.tertiary }]}>
+            <Pressable
+              style={[
+                styles.tab,
+                { backgroundColor: activeTab === 'ingredients' ? colors.background : 'transparent' },
+              ]}
+              onPress={() => setActiveTab('ingredients')}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'ingredients' ? colors.primary : colors.textLight },
+                ]}
+              >
+                {t('recipe.ingredients')}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.tab,
+                { backgroundColor: activeTab === 'instructions' ? colors.background : 'transparent' },
+              ]}
+              onPress={() => setActiveTab('instructions')}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'instructions' ? colors.primary : colors.textLight },
+                ]}
+              >
+                {t('recipe.instructions')}
+              </Text>
+            </Pressable>
+          </View>
+
+          {activeTab === 'ingredients' ? (
+            <View style={styles.list}>
+              {recipe.ingredients.map((item, index) => (
+                <View key={`${index}`} style={styles.listRow}>
+                  <View style={[styles.bullet, { backgroundColor: colors.primary }]} />
+                  <Text style={[styles.listText, { color: colors.text }]}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.list}>
+              {recipe.steps.map((step, index) => (
+                <View key={`${index}`} style={styles.stepRow}>
+                  <View style={[styles.stepNumber, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.stepNumberText, { color: colors.background }]}>{index + 1}</Text>
+                  </View>
+                  <Text style={[styles.stepText, { color: colors.text }]}>{step}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+      {modal}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    fontFamily: FONTS.medium,
+    fontSize: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 18,
+  },
+  headerRight: {
+    flexDirection: 'row',
+  },
+  likeHeaderButton: {
+    width: 64,
+  },
+  likeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  likeHeaderCount: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  heroSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  imageContainer: {
+    width: '85%',
+    aspectRatio: 1.3,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  recipeImage: {
+    width: '100%',
+    height: '100%',
+  },
+  contentCard: {
+    flex: 1,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    marginTop: -30,
+    paddingTop: 40,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    minHeight: 500,
+  },
+  recipeTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  metaText: {
+    fontFamily: FONTS.regular,
+    textAlign: 'center',
+    marginBottom: 18,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 18,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  infoText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+  },
+  infoDivider: {
+    width: 1,
+    height: 18,
+  },
+  hatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderRadius: 25,
+    padding: 4,
+    marginBottom: 24,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 22,
+    alignItems: 'center',
+  },
+  tabText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+  },
+  list: {
+    gap: 12,
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  bullet: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  listText: {
+    flex: 1,
+    fontFamily: FONTS.regular,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  stepNumberText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14,
+  },
+  stepText: {
+    flex: 1,
+    fontFamily: FONTS.regular,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+});
+
+export default PublishedRecipeDetailScreen;

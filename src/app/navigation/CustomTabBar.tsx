@@ -17,7 +17,7 @@ interface TabConfig {
 const TAB_CONFIG: TabConfig[] = [
   { route: 'Home', iconOutline: 'home-outline', iconFilled: 'home' },
   { route: 'Save', iconOutline: 'search-outline', iconFilled: 'search' },
-  { route: 'Add', iconOutline: 'notifications-outline', iconFilled: 'notifications' },
+  { route: 'Add', iconOutline: 'share-social-outline', iconFilled: 'share-social' },
   { route: 'Profile', iconOutline: 'person-outline', iconFilled: 'person' },
 ];
 

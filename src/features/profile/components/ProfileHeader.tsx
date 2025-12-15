@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { FONTS } from '@/constants/theme';
@@ -8,6 +8,7 @@ import type { UserProfile } from '../hooks/useUserProfile';
 import LanguageSelector from './LanguageSelector';
 import { getCurrentLanguageInfo } from '@/i18n/languageService';
 import { logoutUser } from '@/features/auth/services/authService';
+import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 
 interface Props {
   profile?: UserProfile | null;
@@ -17,24 +18,22 @@ interface Props {
 const ProfileHeader: React.FC<Props> = ({ profile, savedCount }: Props) => {
   const { t } = useTranslation();
   const colors = useColors();
+  const { showConfirm, modal } = useAppAlertModal();
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const currentLanguage = getCurrentLanguageInfo();
 
   const handleLogout = () => {
-    Alert.alert(
-      t('auth.logout'),
-      t('profile.logoutConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('auth.logout'),
-          style: 'destructive',
-          onPress: async () => {
-            await logoutUser();
-          },
-        },
-      ]
-    );
+    showConfirm({
+      title: t('auth.logout'),
+      message: t('profile.logoutConfirm'),
+      confirmText: t('auth.logout'),
+      cancelText: t('common.cancel'),
+      confirmVariant: 'destructive',
+      iconName: 'log-out-outline',
+      onConfirm: async () => {
+        await logoutUser();
+      },
+    });
   };
   
   return (
@@ -74,6 +73,7 @@ const ProfileHeader: React.FC<Props> = ({ profile, savedCount }: Props) => {
         visible={showLanguageSelector}
         onClose={() => setShowLanguageSelector(false)}
       />
+      {modal}
     </View>
   );
 };

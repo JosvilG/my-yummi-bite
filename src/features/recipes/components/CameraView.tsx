@@ -5,7 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { FONTS } from '@/constants/theme';
 import { useColors } from '@/shared/hooks/useColors';
 
-const RecipeCameraView: React.FC = () => {
+type Props = {
+  onPhotoCaptured?: (uri: string) => void;
+};
+
+const RecipeCameraView: React.FC<Props> = ({ onPhotoCaptured }) => {
   const { t } = useTranslation();
   const colors = useColors();
   const cameraRef = useRef<ExpoCameraView | null>(null);
@@ -38,6 +42,7 @@ const RecipeCameraView: React.FC = () => {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
       if (photo) {
         console.log('Captured photo:', photo.uri);
+        onPhotoCaptured?.(photo.uri);
       }
     } finally {
       setIsProcessing(false);

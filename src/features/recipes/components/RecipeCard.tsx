@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   Dimensions, 
   Image, 
+  Pressable,
   StyleSheet, 
   Text, 
   View 
@@ -15,11 +16,20 @@ import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import type { RecipeSummary } from '../services/spoonacularService';
 import type { MainStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
+import type { PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.75;
 
-const getHighResImageUrl = (recipe: RecipeSummary): string => {
+type HomeCard = RecipeSummary | PublishedRecipeDoc;
+
+const isPublishedRecipe = (recipe: HomeCard): recipe is PublishedRecipeDoc => typeof recipe.id === 'string';
+
+const getHighResImageUrl = (recipe: HomeCard): string => {
+  if (isPublishedRecipe(recipe)) {
+    return recipe.imageUrl;
+  }
+
   if (recipe.image) {
     const sizePattern = /-\d+x\d+\./;
     if (sizePattern.test(recipe.image)) {
@@ -31,12 +41,13 @@ const getHighResImageUrl = (recipe: RecipeSummary): string => {
 };
 
 interface Props {
-  recipe?: RecipeSummary;
+  recipe?: HomeCard;
   onSkip?: () => void;
   onSave?: () => void;
+  onTogglePublishedLike?: (publishedId: string, liked: boolean) => void;
 }
 
-const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave }) => {
+const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublishedLike }) => {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const colors = useColors();
 
@@ -44,13 +55,26 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave }) => {
     return null;
   }
 
-  const calories = Math.round(recipe?.nutrition?.nutrients?.[0]?.amount || 0);
+  const calories = isPublishedRecipe(recipe) ? 0 : Math.round(recipe?.nutrition?.nutrients?.[0]?.amount || 0);
   const imageSource = getHighResImageUrl(recipe);
-  const summary = recipe.summary?.replace(/<[^>]*>/g, '').slice(0, 120) + '...';
+  const summary = isPublishedRecipe(recipe)
+    ? `${recipe.ingredients?.length ?? 0} ingredientes - ${recipe.steps?.length ?? 0} pasos`
+    : (recipe.summary?.replace(/<[^>]*>/g, '').slice(0, 120) ?? '') + '...';
+  const title = recipe.title ?? '';
+  const likesCount = isPublishedRecipe(recipe) ? recipe.likesCount ?? 0 : 0;
+  const likedByMe = isPublishedRecipe(recipe) ? !!recipe.likedByMe : false;
 
   const handleInfoPress = () => {
+    if (isPublishedRecipe(recipe)) {
+      navigation.navigate('PublishedInfo', { id: recipe.id });
+      return;
+    }
     log.info('Navigation to recipe details', { recipeId: recipe.id, title: recipe.title });
     navigation.navigate('Info', { id: recipe.id });
+  };
+
+  const handleHeartPress = () => {
+    onSave?.();
   };
 
   return (
@@ -61,8 +85,29 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave }) => {
         </View>
 
         <View style={styles.infoContainer}>
-          <Text numberOfLines={2} style={[styles.title, { color: colors.primary }]}>{recipe.title}</Text>
-          <Text style={[styles.calories, { color: colors.accent }]}>{calories} kcal</Text>
+          <View style={styles.titleRow}>
+            <Text numberOfLines={2} style={[styles.title, { color: colors.primary }]}>
+              {title}
+            </Text>
+            {isPublishedRecipe(recipe) && (
+              <Pressable
+                onPress={() => onTogglePublishedLike?.(recipe.id, likedByMe)}
+                style={styles.likeButton}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={likedByMe ? 'thumbs-up' : 'thumbs-up-outline'}
+                  size={18}
+                  color={likedByMe ? colors.primary : colors.textLight}
+                />
+                <Text style={[styles.likeCount, { color: colors.textLight }]}>{likesCount}</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {!isPublishedRecipe(recipe) && (
+            <Text style={[styles.calories, { color: colors.accent }]}>{calories} kcal</Text>
+          )}
           
           <Text numberOfLines={4} style={[styles.summary, { color: colors.textLight }]}>
             {summary}
@@ -87,7 +132,7 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave }) => {
             
             <AnimatedPressable 
               style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.teal }]} 
-              onPress={onSave}
+              onPress={handleHeartPress}
               scaleValue={0.85}
             >
               <Ionicons name="heart" size={28} color={colors.teal} />
@@ -131,10 +176,28 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     alignItems: 'center',
   },
+  titleRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   title: {
+    flex: 1,
     fontFamily: FONTS.bold,
     fontSize: 24,
     textAlign: 'center',
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 6,
+  },
+  likeCount: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
   },
   calories: {
     fontFamily: FONTS.medium,

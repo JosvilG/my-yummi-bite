@@ -8,7 +8,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { loginUser } from '../services/authService';
 import { addBreadcrumb } from '@/lib/sentry';
 import { log } from '@/lib/logger';
+import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -29,6 +29,7 @@ export type LogInScreenProps = NativeStackScreenProps<AuthStackParamList, 'LogIn
 const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
   const colors = useColors();
+  const { showInfo, modal } = useAppAlertModal();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -43,7 +44,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
   const handleLogIn = async () => {
     if (!email || !password) {
       log.warn('Login attempt with empty fields');
-      Alert.alert('Error', t('auth.fillAllFields'));
+      showInfo({ title: t('common.error'), message: t('auth.fillAllFields'), confirmText: t('common.close') });
       return;
     }
 
@@ -60,7 +61,11 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
 
     if (!result.success) {
       log.warn('Login failed', { email, error: result.error });
-      Alert.alert(t('common.error'), result.error ?? t('common.unknownError'));
+      showInfo({
+        title: t('common.error'),
+        message: result.error ?? t('common.unknownError'),
+        confirmText: t('common.close'),
+      });
     } else {
       log.info('Login successful, navigating to main app', { email });
       addBreadcrumb({
@@ -145,6 +150,7 @@ const LogInScreen: React.FC<LogInScreenProps> = ({ navigation }) => {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      {modal}
     </View>
   );
 };

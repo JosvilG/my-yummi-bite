@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import {
-  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -33,6 +32,7 @@ import type { FavoriteRecipeDoc } from '../services/favoriteService';
 import type { UserCategory } from '../services/categoryService';
 import type { MainStackParamList, TabParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
+import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -49,6 +49,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   const recipeStore = useRecipeStore();
   const { favorites, loading, removeFavorite } = useFavoriteRecipes();
   const { categories, addCategory, deleteCategory } = useUserCategories(user?.uid);
+  const { showInfo, showConfirm, modal: alertModal } = useAppAlertModal();
   const [categoryText, setCategoryText] = useState<string>('');
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [cuisineModalVisible, setCuisineModalVisible] = useState<boolean>(false);
@@ -82,7 +83,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   const handleAddCategory = async () => {
     const trimmed = categoryText.trim();
     if (!trimmed) {
-      Alert.alert('Missing name', 'Please provide a category name.');
+      showInfo({ title: 'Missing name', message: 'Please provide a category name.', confirmText: t('common.close') });
       return;
     }
     try {
@@ -90,28 +91,33 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
       setCategoryText('');
       setModalVisible(false);
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
+      showInfo({
+        title: t('common.error'),
+        message: error instanceof Error ? error.message : t('common.unknownError'),
+        confirmText: t('common.close'),
+      });
     }
   };
 
   const handleDeleteFavorite = async (docId: string) => {
-    Alert.alert(
-      t('favorites.deleteTitle'),
-      t('favorites.deleteMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            const result = await removeFavorite(docId);
-            if (!result?.success) {
-              Alert.alert('Error', result?.error || 'Unable to delete recipe');
-            }
-          },
-        },
-      ]
-    );
+    showConfirm({
+      title: t('favorites.deleteTitle'),
+      message: t('favorites.deleteMessage'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      confirmVariant: 'destructive',
+      iconName: 'trash-outline',
+      onConfirm: async () => {
+        const result = await removeFavorite(docId);
+        if (!result?.success) {
+          showInfo({
+            title: t('common.error'),
+            message: result?.error || 'Unable to delete recipe',
+            confirmText: t('common.close'),
+          });
+        }
+      },
+    });
   };
 
   const handleRecipeLongPress = useCallback((recipe: FavoriteRecipeDoc) => {
@@ -138,7 +144,15 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
       });
     } else {
       log.info('Navigation to recipe details', { recipeId: recipe.id, from: 'SaveScreen' });
-      navigation.navigate('Info', { id: recipe.id, rId: recipe.docId });
+      if (recipe.source === 'published' && recipe.publishedId) {
+        navigation.navigate('PublishedInfo', { id: recipe.publishedId });
+        return;
+      }
+      navigation.navigate('Info', {
+        id: recipe.id,
+        rId: recipe.docId,
+        source: recipe.source === 'custom' ? 'custom' : 'spoonacular',
+      });
     }
   }, [selectionMode, navigation]);
 
@@ -164,10 +178,10 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
       const failed = results.filter(r => !r.success);
       
       if (failed.length > 0) {
-        Alert.alert('Error', t('favorites.someAssignmentsFailed'));
+        showInfo({ title: t('common.error'), message: t('favorites.someAssignmentsFailed'), confirmText: t('common.close') });
       }
     } catch (error) {
-      Alert.alert('Error', t('favorites.assignCategoryError'));
+      showInfo({ title: t('common.error'), message: t('favorites.assignCategoryError'), confirmText: t('common.close') });
     } finally {
       setAssigningCategory(false);
       setAssignCategoryModalVisible(false);
@@ -188,10 +202,14 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
       );
       
       if (!result.success) {
-        Alert.alert('Error', result.error || t('favorites.assignCategoryError'));
+        showInfo({
+          title: t('common.error'),
+          message: result.error || t('favorites.assignCategoryError'),
+          confirmText: t('common.close'),
+        });
       }
     } catch (error) {
-      Alert.alert('Error', t('favorites.assignCategoryError'));
+      showInfo({ title: t('common.error'), message: t('favorites.assignCategoryError'), confirmText: t('common.close') });
     } finally {
       setAssigningCategory(false);
       setAssignCategoryModalVisible(false);
@@ -231,7 +249,10 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
         {!selectionMode && (
           <AnimatedPressable
             style={styles.deleteButton}
-            onPress={() => handleDeleteFavorite(item.docId)}
+            onPress={(event: any) => {
+              event?.stopPropagation?.();
+              handleDeleteFavorite(item.docId);
+            }}
             scaleValue={0.85}
           >
             <Ionicons name="heart" size={20} color={colors.primary} />
@@ -640,6 +661,7 @@ const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
           </AnimatedPressable>
         </View>
       )}
+      {alertModal}
     </SafeAreaView>
   );
 });

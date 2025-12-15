@@ -14,7 +14,8 @@ export type TabParamList = {
 
 export type MainStackParamList = {
   TabNav: NavigatorScreenParams<TabParamList>;
-  Info: { id: number; rId?: string };
+  Info: { id: number; rId?: string; source?: 'spoonacular' | 'custom' };
+  PublishedInfo: { id: string };
 };
 
 export type AppStackParamList = {

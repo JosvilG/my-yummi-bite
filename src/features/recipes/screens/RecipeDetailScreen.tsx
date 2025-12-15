@@ -10,12 +10,14 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import RecipeDetailSkeleton from '@/shared/components/RecipeDetailSkeleton';
 import { fetchRecipeInfo, type RecipeSummary } from '../services/spoonacularService';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUserCategories } from '../hooks/useUserCategories';
 import { useFavoriteRecipes } from '../hooks/useFavoriteRecipes';
+import type { FavoriteRecipeDoc } from '../services/favoriteService';
 import { FONTS } from '@/constants/theme';
 import { useColors } from '@/shared/hooks/useColors';
 import type { MainStackParamList } from '@/types/navigation';
@@ -26,12 +28,23 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export type RecipeDetailScreenProps = NativeStackScreenProps<MainStackParamList, 'Info'>;
 
+type IngredientLike = {
+  id: number;
+  name: string;
+  image?: string;
+  amount?: number;
+  unit?: string;
+  measures?: { metric?: { amount?: number; unitShort?: string } };
+};
+
+type StepLike = { number: number; step: string };
+
 const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { id, rId } = route.params || {};
+  const { id, rId, source } = route.params || {};
   const { user } = useAuth();
   const { categories } = useUserCategories(user?.uid);
-  const { favorites, addFavorite, removeFavorite } = useFavoriteRecipes();
+  const { favorites, loading: favoritesLoading, addFavorite, removeFavorite } = useFavoriteRecipes();
   const colors = useColors();
   
   const [recipe, setRecipe] = useState<RecipeSummary | null>(null);
@@ -42,12 +55,35 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
 
   const favoriteDoc = favorites.find(fav => fav.id === id);
   const isFavorite = !!favoriteDoc;
+  const customDoc: FavoriteRecipeDoc | undefined =
+    source === 'custom'
+      ? favorites.find(fav => (rId ? fav.docId === rId : fav.id === id) && fav.source === 'custom')
+      : undefined;
+  const isCustomRecipe = source === 'custom' && !!customDoc;
 
   useEffect(() => {
     log.debug('RecipeDetailScreen mounted', { recipeId: id });
     
     if (!id) {
       log.warn('RecipeDetailScreen opened without recipe ID');
+      return;
+    }
+
+    if (source === 'custom') {
+      setRecipe(null);
+      if (favoritesLoading) {
+        setLoading(true);
+        return;
+      }
+
+      if (!customDoc) {
+        setLoading(false);
+        setError('Recipe not found');
+        return;
+      }
+
+      setError(null);
+      setLoading(false);
       return;
     }
 
@@ -88,7 +124,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
     return () => {
       log.debug('RecipeDetailScreen unmounted', { recipeId: id });
     };
-  }, [id]);
+  }, [id, source, customDoc?.docId, favoritesLoading]);
 
   const toggleIngredientCheck = (ingredientId: number) => {
     setCheckedIngredients(prev => {
@@ -105,8 +141,17 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
   };
 
   const handleFavoritePress = async () => {
+    if (isCustomRecipe) {
+      if (customDoc?.docId) {
+        log.info('Removing custom recipe from favorites', { recipeId: id, title: customDoc.title });
+        await removeFavorite(customDoc.docId);
+        navigation.goBack();
+      }
+      return;
+    }
+
     if (!recipe) return;
-    
+
     if (isFavorite && favoriteDoc?.docId) {
       log.info('Removing recipe from favorites', { recipeId: id, title: recipe.title });
       await removeFavorite(favoriteDoc.docId);
@@ -145,19 +190,66 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
     );
   }
 
-  if (error || !recipe) {
+  if (error || (!recipe && !isCustomRecipe)) {
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.error }]}>{error || t('home.recipeNotFound')}</Text>
+        <Text style={[styles.errorText, { color: colors.error }]}>{error ?? t('home.recipeNotFound')}</Text>
       </View>
     );
   }
 
-  const nutrients = recipe.nutrition?.nutrients || [];
-  const calories = nutrients.find(n => n.name === 'Calories')?.amount || 0;
-  const protein = nutrients.find(n => n.name === 'Protein')?.amount || 0;
-  const carbs = nutrients.find(n => n.name === 'Carbohydrates')?.amount || 0;
-  const fat = nutrients.find(n => n.name === 'Fat')?.amount || 0;
+  const nutrients = recipe?.nutrition?.nutrients || [];
+  const spoonCalories = nutrients.find(n => n.name === 'Calories')?.amount || 0;
+  const spoonProtein = nutrients.find(n => n.name === 'Protein')?.amount || 0;
+  const spoonCarbs = nutrients.find(n => n.name === 'Carbohydrates')?.amount || 0;
+  const spoonFat = nutrients.find(n => n.name === 'Fat')?.amount || 0;
+
+  const calories = isCustomRecipe ? Number(customDoc?.nutrition?.calories || 0) : spoonCalories;
+  const protein = isCustomRecipe ? Number(customDoc?.nutrition?.protein || 0) : spoonProtein;
+  const carbs = isCustomRecipe ? Number(customDoc?.nutrition?.carbs || 0) : spoonCarbs;
+  const fat = isCustomRecipe ? Number(customDoc?.nutrition?.fat || 0) : spoonFat;
+
+  const title = isCustomRecipe ? (customDoc?.title ?? '') : (recipe?.title ?? '');
+  const imageUrl = isCustomRecipe ? (customDoc?.url ?? '') : (recipe?.image ?? '');
+  const ingredientsToRender: IngredientLike[] = isCustomRecipe
+    ? (customDoc?.ingredients ?? []).map((name, index) => ({ id: index + 1, name }))
+    : ((recipe?.extendedIngredients ?? []) as IngredientLike[]);
+  const stepsToRender: StepLike[] = isCustomRecipe
+    ? (customDoc?.steps ?? []).map((step, index) => ({ number: index + 1, step }))
+    : ((recipe?.analyzedInstructions?.[0]?.steps ?? []) as StepLike[]);
+  const readyInMinutes = isCustomRecipe
+    ? (customDoc?.readyInMinutes ?? 0)
+    : (recipe?.readyInMinutes ?? 0);
+  const difficultyLevel = (() => {
+    if (isCustomRecipe) {
+      if (customDoc?.difficulty === 'easy') return 1;
+      if (customDoc?.difficulty === 'medium') return 2;
+      if (customDoc?.difficulty === 'hard') return 3;
+    }
+    if (!readyInMinutes) return 0;
+    const label = getDifficultyText(readyInMinutes);
+    if (label === t('recipe.easy')) return 1;
+    if (label === t('recipe.medium')) return 2;
+    return 3;
+  })();
+
+  const renderDifficultyHats = (level: number) => {
+    if (level <= 0) {
+      return <Text style={[styles.infoText, { color: colors.textLight }]}>--</Text>;
+    }
+    return (
+      <View style={styles.hatsRow}>
+        {Array.from({ length: level }).map((_, index) => (
+          <MaterialCommunityIcons
+            key={`hat-${index}`}
+            name="chef-hat"
+            size={16}
+            color={colors.textLight}
+          />
+        ))}
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.tertiary }]}>
@@ -187,12 +279,12 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
       >
         <View style={styles.heroSection}>
           <View style={[styles.imageContainer, { backgroundColor: colors.background }]}>
-            <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
+            <Image source={{ uri: imageUrl }} style={styles.recipeImage} />
           </View>
         </View>
 
         <View style={[styles.contentCard, { backgroundColor: colors.background }]}>
-          <Text style={[styles.recipeTitle, { color: colors.text }]}>{recipe.title}</Text>
+          <Text style={[styles.recipeTitle, { color: colors.text }]}>{title}</Text>
 
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
@@ -202,12 +294,12 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
             <View style={[styles.infoDivider, { backgroundColor: colors.tertiary }]} />
             <View style={styles.infoItem}>
               <Ionicons name="time-outline" size={16} color={colors.textLight} />
-              <Text style={[styles.infoText, { color: colors.textLight }]}>{recipe.readyInMinutes} min</Text>
+              <Text style={[styles.infoText, { color: colors.textLight }]}>
+                {readyInMinutes ? `${readyInMinutes} min` : '-- min'}
+              </Text>
             </View>
             <View style={[styles.infoDivider, { backgroundColor: colors.tertiary }]} />
-            <View style={styles.infoItem}>
-              <Text style={[styles.infoText, { color: colors.textLight }]}>{getDifficultyText(recipe.readyInMinutes || 30)}</Text>
-            </View>
+            <View style={styles.infoItem}>{renderDifficultyHats(difficultyLevel)}</View>
           </View>
 
           <View style={[styles.tabsContainer, { backgroundColor: colors.tertiary }]}>
@@ -243,10 +335,13 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
 
           {activeTab === 'ingredients' ? (
             <View style={styles.ingredientsList}>
-              {recipe.extendedIngredients?.map((ingredient) => {
+              {ingredientsToRender.map((ingredient) => {
                 const isChecked = checkedIngredients.has(ingredient.id);
                 const amount = ingredient.measures?.metric?.amount ?? ingredient.amount ?? '';
                 const unit = ingredient.measures?.metric?.unitShort ?? ingredient.unit ?? '';
+                const ingredientImageUrl = ingredient.image
+                  ? `https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}`
+                  : null;
                 
                 return (
                   <Pressable
@@ -261,16 +356,12 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
                     ]}>
                       {isChecked && <Ionicons name="checkmark" size={14} color={colors.background} />}
                     </View>
-                    <Image
-                      source={{ uri: `https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}` }}
-                      style={styles.ingredientImage}
-                    />
                     <Text style={[
                       styles.ingredientText, 
                       { color: colors.text },
                       isChecked && { color: colors.textLight, textDecorationLine: 'line-through' }
                     ]}>
-                      {amount}{unit} {ingredient.name}
+                      {isCustomRecipe ? ingredient.name : `${amount}${unit} ${ingredient.name}`}
                     </Text>
                   </Pressable>
                 );
@@ -278,7 +369,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ route, navigati
             </View>
           ) : (
             <View style={styles.instructionsList}>
-              {recipe.analyzedInstructions?.[0]?.steps?.map((step, index) => (
+              {stepsToRender.map((step, index) => (
                 <View key={step.number} style={styles.instructionRow}>
                   <View style={[styles.stepNumber, { backgroundColor: colors.primary }]}>
                     <Text style={[styles.stepNumberText, { color: colors.background }]}>{index + 1}</Text>
@@ -407,6 +498,11 @@ const styles = StyleSheet.create({
     width: 1,
     height: 16,
     marginHorizontal: 16,
+  },
+  hatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   tabsContainer: {
     flexDirection: 'row',

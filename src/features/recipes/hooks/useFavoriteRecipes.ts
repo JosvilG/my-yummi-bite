@@ -13,13 +13,21 @@ export const useFavoriteRecipes = () => {
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<FavoriteRecipeDoc[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [hydrated, setHydrated] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      setFavorites([]);
+      setLoading(false);
+      setError(null);
+      setHydrated(true);
+      return;
+    }
 
     const loadFavorites = async () => {
       log.debug('useFavoriteRecipes: Loading favorites', { userId: user.uid });
+      setHydrated(false);
       setLoading(true);
       const result = await getFavoriteRecipes(user.uid);
 
@@ -31,6 +39,7 @@ export const useFavoriteRecipes = () => {
         log.warn('useFavoriteRecipes: Failed to load favorites', { error: result.error });
       }
       setLoading(false);
+      setHydrated(true);
     };
 
     loadFavorites();
@@ -41,6 +50,7 @@ export const useFavoriteRecipes = () => {
 
     const unsubscribe = subscribeToFavoriteRecipes(user.uid, recipes => {
       setFavorites(recipes);
+      setHydrated(true);
     });
 
     return unsubscribe;
@@ -71,6 +81,7 @@ export const useFavoriteRecipes = () => {
   return {
     favorites,
     loading,
+    hydrated,
     error,
     addFavorite,
     removeFavorite,

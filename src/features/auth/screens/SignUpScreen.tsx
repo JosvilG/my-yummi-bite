@@ -9,7 +9,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { registerUser } from '../services/authService';
 import { addBreadcrumb } from '@/lib/sentry';
 import { log } from '@/lib/logger';
+import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,6 +31,7 @@ export type SignUpScreenProps = NativeStackScreenProps<AuthStackParamList, 'Sign
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
   const colors = useColors();
+  const { showInfo, modal } = useAppAlertModal();
   const [userName, setUserName] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -48,19 +49,19 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const handleSignUp = async () => {
     if (!userName || !fullName || !email || !password || !confirmPassword) {
       log.warn('Sign up attempt with empty fields');
-      Alert.alert(t('common.error'), t('auth.fillAllFields'));
+      showInfo({ title: t('common.error'), message: t('auth.fillAllFields'), confirmText: t('common.close') });
       return;
     }
 
     if (password !== confirmPassword) {
       log.warn('Password mismatch on sign up');
-      Alert.alert(t('common.error'), t('auth.passwordsNoMatch'));
+      showInfo({ title: t('common.error'), message: t('auth.passwordsNoMatch'), confirmText: t('common.close') });
       return;
     }
 
     if (password.length < 6) {
       log.warn('Password too short on sign up');
-      Alert.alert(t('common.error'), t('auth.passwordMinLength'));
+      showInfo({ title: t('common.error'), message: t('auth.passwordMinLength'), confirmText: t('common.close') });
       return;
     }
 
@@ -77,7 +78,11 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 
     if (!result.success) {
       log.warn('Registration failed', { email, userName, error: result.error });
-      Alert.alert(t('auth.registrationFailed'), result.error ?? t('common.unknownError'));
+      showInfo({
+        title: t('auth.registrationFailed'),
+        message: result.error ?? t('common.unknownError'),
+        confirmText: t('common.close'),
+      });
     } else {
       log.info('Registration successful, user created', { userId: result.user?.uid, email });
       addBreadcrumb({
@@ -171,6 +176,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {modal}
     </SafeAreaView>
   );
 };

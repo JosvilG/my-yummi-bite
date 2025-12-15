@@ -1,3 +1,12 @@
+const { loadEnvForAppEnv, normalizeAppEnv } = require('./scripts/env');
+
+const appEnv = normalizeAppEnv(process.env.APP_ENV);
+loadEnvForAppEnv(appEnv, { override: false });
+
+const expoPublicEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => key.startsWith('EXPO_PUBLIC_'))
+);
+
 module.exports = {
   expo: {
     name: 'MyYummiBite',
@@ -37,17 +46,14 @@ module.exports = {
       [
         'expo-camera',
         {
-          cameraPermission:
-            'Allow MyYummiBite to access your camera to take photos of recipes.',
+          cameraPermission: 'Allow MyYummiBite to access your camera to take photos of recipes.',
         },
       ],
       [
         'expo-media-library',
         {
-          photosPermission:
-            'Allow MyYummiBite to access your photos to save recipe images.',
-          savePhotosPermission:
-            'Allow MyYummiBite to save recipe photos to your library.',
+          photosPermission: 'Allow MyYummiBite to access your photos to save recipe images.',
+          savePhotosPermission: 'Allow MyYummiBite to save recipe photos to your library.',
         },
       ],
       'sentry-expo',
@@ -56,7 +62,9 @@ module.exports = {
       eas: {
         projectId: 'your-project-id',
       },
+      appEnv,
       sentryDsn: process.env.SENTRY_DSN || '',
+      ...expoPublicEnv,
     },
   },
 };
