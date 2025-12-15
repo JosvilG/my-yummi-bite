@@ -14,7 +14,7 @@ import { FONTS } from '@/constants/theme';
 import { useColors } from '@/shared/hooks/useColors';
 import AnimatedPressable from '@/shared/components/AnimatedPressable';
 import type { RecipeSummary } from '../services/spoonacularService';
-import type { MainStackParamList } from '@/types/navigation';
+import type { CommonStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import type { PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
 import ReportReasonModal, { type ReportReasonKey } from '@/shared/components/ReportReasonModal';
@@ -53,7 +53,7 @@ interface Props {
 }
 
 const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublishedLike }) => {
-  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<CommonStackParamList>>();
   const { t } = useTranslation();
   const colors = useColors();
   const { user } = useAuth();

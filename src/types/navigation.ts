@@ -5,6 +5,29 @@ export type AuthStackParamList = {
   SignUp: undefined;
 };
 
+export type CommonStackParamList = {
+  Info: { id: number; rId?: string; source?: 'spoonacular' | 'custom' };
+  PublishedInfo: { id: string };
+  FollowingList: undefined;
+  UserProfile: { userId: string };
+};
+
+export type HomeStackParamList = {
+  Home: undefined;
+} & CommonStackParamList;
+
+export type SaveStackParamList = {
+  Save: undefined;
+} & CommonStackParamList;
+
+export type AddStackParamList = {
+  Add: undefined;
+} & CommonStackParamList;
+
+export type ProfileStackParamList = {
+  Profile: undefined;
+} & CommonStackParamList;
+
 export type TabParamList = {
   Home: undefined;
   Save: undefined;
@@ -12,13 +35,7 @@ export type TabParamList = {
   Profile: undefined;
 };
 
-export type MainStackParamList = {
-  TabNav: NavigatorScreenParams<TabParamList>;
-  Info: { id: number; rId?: string; source?: 'spoonacular' | 'custom' };
-  PublishedInfo: { id: string };
-};
-
 export type AppStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
-  Main: NavigatorScreenParams<MainStackParamList>;
+  Main: undefined;
 };

@@ -20,7 +20,7 @@ import { useFavoriteRecipes } from '../hooks/useFavoriteRecipes';
 import type { FavoriteRecipeDoc } from '../services/favoriteService';
 import { FONTS } from '@/constants/theme';
 import { useColors } from '@/shared/hooks/useColors';
-import type { MainStackParamList } from '@/types/navigation';
+import type { CommonStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import { captureException } from '@/lib/sentry';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
@@ -29,7 +29,7 @@ import { reportRecipe } from '../services/reportService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export type RecipeDetailScreenProps = NativeStackScreenProps<MainStackParamList, 'Info'>;
+export type RecipeDetailScreenProps = NativeStackScreenProps<CommonStackParamList, 'Info'>;
 
 type IngredientLike = {
   id: number;
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   heroSection: {
     alignItems: 'center',

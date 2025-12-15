@@ -23,7 +23,7 @@ import { useUserCategories } from '../hooks/useUserCategories';
 import { assignRecipeCategory } from '../services/categoryService';
 import { FONTS } from '@/constants/theme';
 import { useColors } from '@/shared/hooks/useColors';
-import type { MainStackParamList } from '@/types/navigation';
+import type { CommonStackParamList } from '@/types/navigation';
 
 const BANNER_HEIGHT = 340;
 
@@ -46,7 +46,7 @@ const getHeroImageStyle = (scrollY: Animated.Value) => ({
   ],
 });
 
-export type InfoScreenProps = NativeStackScreenProps<MainStackParamList, 'Info'>;
+export type InfoScreenProps = NativeStackScreenProps<CommonStackParamList, 'Info'>;
 
 const InfoScreen: React.FC<InfoScreenProps> = ({ route, navigation }: InfoScreenProps) => {
   const { t } = useTranslation();

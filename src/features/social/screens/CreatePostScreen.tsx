@@ -13,8 +13,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { TabParamList } from '@/types/navigation';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { AddStackParamList } from '@/types/navigation';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColors } from '@/shared/hooks/useColors';
@@ -26,7 +26,7 @@ import { publishRecipe } from '../services/publishedRecipeService';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 import CameraView from '@/features/recipes/components/CameraView';
 import { setPublishedRecipeSave } from '@/features/social/services/publishedRecipeService';
-type Props = BottomTabScreenProps<TabParamList, 'Add'>;
+type Props = NativeStackScreenProps<AddStackParamList, 'Add'>;
 
 const FALLBACK_IMAGE_URL =
   'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=1200&q=80';
@@ -140,7 +140,7 @@ const CreatePostScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     resetForm();
-    navigation.navigate('Save');
+    navigation.getParent()?.navigate('Save' as never);
   };
 
   const handlePickPhoto = () => {

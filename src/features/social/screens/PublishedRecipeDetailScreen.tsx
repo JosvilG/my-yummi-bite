@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useColors } from '@/shared/hooks/useColors';
 import { FONTS } from '@/constants/theme';
-import type { MainStackParamList } from '@/types/navigation';
+import type { CommonStackParamList } from '@/types/navigation';
 import { useAuth } from '@/app/providers/AuthProvider';
 import RecipeDetailSkeleton from '@/shared/components/RecipeDetailSkeleton';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
@@ -36,7 +36,7 @@ import { reportRecipe } from '@/features/recipes/services/reportService';
 import { useUserProfile } from '@/features/profile/hooks/useUserProfile';
 import { setFollowUser, subscribeToFollowingStatus } from '@/features/profile/services/followService';
 
-export type PublishedRecipeDetailScreenProps = NativeStackScreenProps<MainStackParamList, 'PublishedInfo'>;
+export type PublishedRecipeDetailScreenProps = NativeStackScreenProps<CommonStackParamList, 'PublishedInfo'>;
 
 const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   heroSection: {
     alignItems: 'center',

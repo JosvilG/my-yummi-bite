@@ -16,8 +16,6 @@ import { observer } from 'mobx-react-lite';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { CompositeScreenProps } from '@react-navigation/native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRecipeStore } from '@/app/providers/RecipeProvider';
@@ -30,7 +28,7 @@ import { useColors } from '@/shared/hooks/useColors';
 import { updateRecipeCategory } from '../services/favoriteService';
 import type { FavoriteRecipeDoc } from '../services/favoriteService';
 import type { UserCategory } from '../services/categoryService';
-import type { MainStackParamList, TabParamList } from '@/types/navigation';
+import type { SaveStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import { useAppAlertModal } from '@/shared/hooks/useAppAlertModal';
 import { setPublishedRecipeSave } from '@/features/social/services/publishedRecipeService';
@@ -38,10 +36,7 @@ import { setPublishedRecipeSave } from '@/features/social/services/publishedReci
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
-type SaveScreenProps = CompositeScreenProps<
-  BottomTabScreenProps<TabParamList, 'Save'>,
-  NativeStackScreenProps<MainStackParamList>
->;
+type SaveScreenProps = NativeStackScreenProps<SaveStackParamList, 'Save'>;
 
 const SaveScreen: React.FC<SaveScreenProps> = observer(({ navigation }) => {
   const { t } = useTranslation();

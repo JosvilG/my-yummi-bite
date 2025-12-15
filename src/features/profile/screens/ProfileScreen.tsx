@@ -13,8 +13,6 @@ import {
 import { observer } from 'mobx-react-lite';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import type { CompositeScreenProps } from '@react-navigation/native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useTheme } from '@/app/providers/ThemeProvider';
@@ -28,7 +26,7 @@ import { useColors } from '@/shared/hooks/useColors';
 import { getCurrentLanguageInfo } from '@/i18n/languageService';
 import { logoutUser } from '@/features/auth/services/authService';
 import { FONTS } from '@/constants/theme';
-import type { MainStackParamList, TabParamList } from '@/types/navigation';
+import type { ProfileStackParamList } from '@/types/navigation';
 import { log } from '@/lib/logger';
 import type { FavoriteRecipeDoc } from '@/features/recipes/services/favoriteService';
 import { subscribeToPublishedRecipesByAuthor, type PublishedRecipeDoc } from '@/features/social/services/publishedRecipeService';
@@ -44,10 +42,7 @@ import { EmailAuthProvider, deleteUser, reauthenticateWithCredential } from 'fir
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 
-type ProfileScreenProps = CompositeScreenProps<
-  BottomTabScreenProps<TabParamList, 'Profile'>,
-  NativeStackScreenProps<MainStackParamList>
->;
+type ProfileScreenProps = NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
 
 type TabType = 'saved' | 'published' | 'info';
 
@@ -435,10 +430,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = observer(({ navigation }) =>
               <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.followers')}</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.statItem}>
+            <AnimatedPressable
+              style={styles.statItem}
+              pressableStyle={styles.statItemPressable}
+              onPress={() => navigation.navigate('FollowingList')}
+              scaleValue={0.96}
+            >
               <Text style={[styles.statValue, { color: colors.text }]}>{profile?.followingCount ?? 0}</Text>
               <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.following')}</Text>
-            </View>
+            </AnimatedPressable>
           </View>
         </View>
 
@@ -968,6 +968,9 @@ const styles = StyleSheet.create({
   statItem: {
     alignItems: 'center',
     paddingHorizontal: 24,
+  },
+  statItemPressable: {
+    alignItems: 'center',
   },
   statValue: {
     fontFamily: FONTS.bold,
