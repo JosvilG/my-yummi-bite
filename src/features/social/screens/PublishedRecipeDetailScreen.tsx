@@ -46,6 +46,7 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
   const [likesCount, setLikesCount] = useState(0);
   const [favorited, setFavorited] = useState(false);
   const [favoriting, setFavoriting] = useState(false);
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
 
   const canLike = !!user?.uid;
   const canFavorite = !!user?.uid;
@@ -68,6 +69,7 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
       setRecipe(result.recipe);
       setLikesCount(result.recipe.likesCount ?? 0);
       setError(null);
+      setCheckedIngredients(new Set());
 
       if (user?.uid) {
         const liked = await hasUserLikedPublishedRecipe(id, user.uid);
@@ -91,6 +93,15 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
 
   const ingredientsCount = useMemo(() => recipe?.ingredients?.length ?? 0, [recipe?.ingredients]);
   const stepsCount = useMemo(() => recipe?.steps?.length ?? 0, [recipe?.steps]);
+
+  const toggleIngredientCheck = (ingredientId: number) => {
+    setCheckedIngredients(prev => {
+      const next = new Set(prev);
+      if (next.has(ingredientId)) next.delete(ingredientId);
+      else next.add(ingredientId);
+      return next;
+    });
+  };
 
   const getDifficultyText = (readyInMinutes: number) => {
     if (readyInMinutes <= 20) return t('recipe.easy');
@@ -313,13 +324,37 @@ const PublishedRecipeDetailScreen: React.FC<PublishedRecipeDetailScreenProps> = 
           </View>
 
           {activeTab === 'ingredients' ? (
-            <View style={styles.list}>
-              {recipe.ingredients.map((item, index) => (
-                <View key={`${index}`} style={styles.listRow}>
-                  <View style={[styles.bullet, { backgroundColor: colors.primary }]} />
-                  <Text style={[styles.listText, { color: colors.text }]}>{item}</Text>
-                </View>
-              ))}
+            <View style={styles.ingredientsList}>
+              {recipe.ingredients.map((item, index) => {
+                const ingredientId = index + 1;
+                const isChecked = checkedIngredients.has(ingredientId);
+                return (
+                  <Pressable
+                    key={`${ingredientId}-${item}`}
+                    style={styles.ingredientRow}
+                    onPress={() => toggleIngredientCheck(ingredientId)}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        { borderColor: colors.primary },
+                        isChecked && { backgroundColor: colors.primary, borderColor: colors.primary },
+                      ]}
+                    >
+                      {isChecked && <Ionicons name="checkmark" size={14} color={colors.background} />}
+                    </View>
+                    <Text
+                      style={[
+                        styles.ingredientText,
+                        { color: colors.text },
+                        isChecked && { color: colors.textLight, textDecorationLine: 'line-through' },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           ) : (
             <View style={styles.list}>
@@ -488,6 +523,31 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   listText: {
+    flex: 1,
+    fontFamily: FONTS.regular,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  ingredientsList: {
+    gap: 0,
+  },
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  ingredientText: {
     flex: 1,
     fontFamily: FONTS.regular,
     fontSize: 15,
