@@ -57,6 +57,8 @@ module.exports = {
         },
       ],
       'sentry-expo',
+      'expo-font',
+      'expo-localization',
     ],
     extra: {
       eas: {
