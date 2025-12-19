@@ -866,7 +866,7 @@ const HomeScreen: React.FC = observer(() => {
             onSwipedAborted={handleSwipedAborted}
             onSwiping={handleSwiping}
             backgroundColor="transparent"
-            stackSize={3}
+            stackSize={1}
             stackScale={8}
             stackSeparation={14}
             animateCardOpacity

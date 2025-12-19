@@ -12,6 +12,7 @@ import {
   orderBy,
   query,
   type QueryDocumentSnapshot,
+  runTransaction,
   setDoc,
   startAfter,
   updateDoc,
@@ -389,13 +390,20 @@ export const setPublishedRecipeLike = async (
     const recipeRef = doc(db, 'PublishedRecipes', publishedRecipeId);
     const likeRef = doc(db, 'PublishedRecipes', publishedRecipeId, 'likes', userId);
 
-    if (like) {
-      await setDoc(likeRef, { createdAt: serverTimestamp() });
-      await updateDoc(recipeRef, { likesCount: increment(1) });
-    } else {
-      await deleteDoc(likeRef);
-      await updateDoc(recipeRef, { likesCount: increment(-1) });
-    }
+    await runTransaction(db, async (tx) => {
+      const likeSnap = await tx.get(likeRef);
+
+      if (like) {
+        if (likeSnap.exists()) return;
+        tx.set(likeRef, { createdAt: serverTimestamp() });
+        tx.update(recipeRef, { likesCount: increment(1) });
+        return;
+      }
+
+      if (!likeSnap.exists()) return;
+      tx.delete(likeRef);
+      tx.update(recipeRef, { likesCount: increment(-1) });
+    });
     return { success: true };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -428,17 +436,20 @@ export const setPublishedRecipeSave = async (
     const recipeRef = doc(db, 'PublishedRecipes', publishedRecipeId);
     const saveRef = doc(db, 'PublishedRecipes', publishedRecipeId, 'saves', userId);
 
-    const snap = await getDoc(saveRef);
-    if (save) {
-      if (snap.exists()) return { success: true };
-      await setDoc(saveRef, { createdAt: serverTimestamp() });
-      await updateDoc(recipeRef, { savesCount: increment(1) });
-      return { success: true };
-    }
+    await runTransaction(db, async (tx) => {
+      const saveSnap = await tx.get(saveRef);
 
-    if (!snap.exists()) return { success: true };
-    await deleteDoc(saveRef);
-    await updateDoc(recipeRef, { savesCount: increment(-1) });
+      if (save) {
+        if (saveSnap.exists()) return;
+        tx.set(saveRef, { createdAt: serverTimestamp() });
+        tx.update(recipeRef, { savesCount: increment(1) });
+        return;
+      }
+
+      if (!saveSnap.exists()) return;
+      tx.delete(saveRef);
+      tx.update(recipeRef, { savesCount: increment(-1) });
+    });
     return { success: true };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

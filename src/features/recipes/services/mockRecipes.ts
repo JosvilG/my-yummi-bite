@@ -1710,7 +1710,11 @@ export const MOCK_RECIPES: RecipeSummary[] = [
   },
 ];
 
-export const getMockRecipes = (count: number, cuisineFilters: string[] = []): RecipeSummary[] => {
+export const getMockRecipes = (
+  count: number,
+  cuisineFilters: string[] = [],
+  mealType?: string | null
+): RecipeSummary[] => {
   let recipes = [...MOCK_RECIPES];
 
   if (cuisineFilters.length > 0) {
@@ -1719,6 +1723,23 @@ export const getMockRecipes = (count: number, cuisineFilters: string[] = []): Re
         cuisineFilters.some(filter => cuisine.toLowerCase().includes(filter.toLowerCase()))
       )
     );
+  }
+
+  const normalizedMealType = mealType?.trim().toLowerCase();
+  if (normalizedMealType) {
+    if (normalizedMealType === 'vegetarian') {
+      recipes = recipes.filter(recipe => {
+        const vegetarianFlag = recipe.vegetarian;
+        if (typeof vegetarianFlag === 'boolean') return vegetarianFlag;
+
+        const haystack = `${recipe.title ?? ''} ${recipe.summary ?? ''}`.toLowerCase();
+        return haystack.includes('vegetarian');
+      });
+    } else {
+      recipes = recipes.filter(recipe =>
+        recipe.dishTypes?.some(dishType => dishType.trim().toLowerCase() === normalizedMealType)
+      );
+    }
   }
 
   const shuffled = recipes.sort(() => Math.random() - 0.5);

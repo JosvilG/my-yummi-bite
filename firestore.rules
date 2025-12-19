@@ -1,0 +1,259 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function intOrZero(value) {
+      return value is int ? value : 0;
+    }
+
+    match /users/{userId} {
+      // Perfiles visibles solo para usuarios autenticados (evitar exponer datos a anónimos).
+      allow read: if isSignedIn();
+
+      allow create: if isSelf(userId) && request.resource.data.id == userId;
+
+      // Update del propio perfil + caso especial: incremento/decremento de followersCount por el follower.
+      allow update: if (isSelf(userId) && isValidSelfUserUpdate())
+        || (!isSelf(userId) && isValidFollowerCountUpdate(userId));
+
+      allow delete: if false;
+
+      function isValidSelfUserUpdate() {
+        let changed = request.resource.data.diff(resource.data).changedKeys();
+        return changed.hasOnly([
+          'username',
+          'name',
+          'bio',
+          'photoUrl',
+          'updatedAt',
+          'accountStatus',
+          'pausedAt',
+          'followersCount',
+          'followingCount'
+        ]) && request.resource.data.id == resource.data.id;
+      }
+
+      function isValidFollowerCountUpdate(targetUserId) {
+        if (!isSignedIn()) return false;
+
+        let changed = request.resource.data.diff(resource.data).changedKeys();
+        if (!changed.hasOnly(['followersCount', 'updatedAt'])) return false;
+
+        let before = intOrZero(resource.data.followersCount);
+        let after = intOrZero(request.resource.data.followersCount);
+
+        let followerPath =
+          /databases/$(database)/documents/users/$(targetUserId)/followers/$(request.auth.uid);
+
+        return request.resource.data.id == resource.data.id && (
+          (after == before + 1 && !exists(followerPath) && existsAfter(followerPath)) ||
+          (after == before - 1 && exists(followerPath) && !existsAfter(followerPath))
+        );
+      }
+
+      match /FavRecipes/{docId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      match /Categories/{categoryId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      match /following/{targetUserId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      match /followers/{followerId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.auth.uid == followerId
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow delete: if isSignedIn() && request.auth.uid == followerId;
+        allow update: if false;
+      }
+    }
+
+    match /PublishedRecipes/{recipeId} {
+      // Feed público
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && isValidPublishedCreate();
+
+      allow update: if isSignedIn() && (
+        isValidPublishedAuthorUpdate() ||
+        isValidPublishedAnonymizeUpdate() ||
+        isValidPublishedLikeCountUpdate(recipeId) ||
+        isValidPublishedSaveCountUpdate(recipeId) ||
+        isValidPublishedShareCountUpdate()
+      );
+
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+
+      function isValidPublishedCreate() {
+        return request.resource.data.keys().hasOnly([
+          'authorId',
+          'title',
+          'imageUrl',
+          'ingredients',
+          'steps',
+          'readyInMinutes',
+          'difficulty',
+          'nutrition',
+          'likesCount',
+          'savesCount',
+          'sharesCount',
+          'createdAt'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.imageUrl is string
+        && request.resource.data.ingredients is list
+        && request.resource.data.steps is list
+        && intOrZero(request.resource.data.likesCount) >= 0
+        && intOrZero(request.resource.data.savesCount) >= 0
+        && intOrZero(request.resource.data.sharesCount) >= 0
+        && request.resource.data.createdAt == request.time;
+      }
+
+      function isValidPublishedAuthorUpdate() {
+        if (resource.data.authorId != request.auth.uid) return false;
+        let changed = request.resource.data.diff(resource.data).changedKeys();
+
+        // El autor puede editar contenido, no contadores.
+        return changed.hasOnly([
+          'title',
+          'imageUrl',
+          'ingredients',
+          'steps',
+          'readyInMinutes',
+          'difficulty',
+          'nutrition',
+          'updatedAt'
+        ])
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.likesCount == resource.data.likesCount
+        && request.resource.data.savesCount == resource.data.savesCount
+        && request.resource.data.sharesCount == resource.data.sharesCount
+        && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      function isValidPublishedAnonymizeUpdate() {
+        // Caso: borrar cuenta manteniendo recetas (accountService) => authorId -> 'anonymous'
+        if (resource.data.authorId != request.auth.uid) return false;
+        let changed = request.resource.data.diff(resource.data).changedKeys();
+
+        return changed.hasOnly(['authorId', 'authorDeletedAt', 'updatedAt'])
+          && request.resource.data.authorId == 'anonymous'
+          && request.resource.data.authorDeletedAt == request.time
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.likesCount == resource.data.likesCount
+          && request.resource.data.savesCount == resource.data.savesCount
+          && request.resource.data.sharesCount == resource.data.sharesCount;
+      }
+
+      function isValidPublishedLikeCountUpdate(targetRecipeId) {
+        let changed = request.resource.data.diff(resource.data).changedKeys();
+        if (!changed.hasOnly(['likesCount'])) return false;
+
+        let before = intOrZero(resource.data.likesCount);
+        let after = intOrZero(request.resource.data.likesCount);
+        if (after < 0) return false;
+
+        let likePath =
+          /databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/likes/$(request.auth.uid);
+
+        return (
+          (after == before + 1 && !exists(likePath) && existsAfter(likePath)) ||
+          (after == before - 1 && exists(likePath) && !existsAfter(likePath))
+        );
+      }
+
+      function isValidPublishedSaveCountUpdate(targetRecipeId) {
+        let changed = request.resource.data.diff(resource.data).changedKeys();
+        if (!changed.hasOnly(['savesCount'])) return false;
+
+        let before = intOrZero(resource.data.savesCount);
+        let after = intOrZero(request.resource.data.savesCount);
+        if (after < 0) return false;
+
+        let savePath =
+          /databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/saves/$(request.auth.uid);
+
+        return (
+          (after == before + 1 && !exists(savePath) && existsAfter(savePath)) ||
+          (after == before - 1 && exists(savePath) && !existsAfter(savePath))
+        );
+      }
+
+      function isValidPublishedShareCountUpdate() {
+        let changed = request.resource.data.diff(resource.data).changedKeys();
+        if (!changed.hasOnly(['sharesCount'])) return false;
+
+        let before = intOrZero(resource.data.sharesCount);
+        let after = intOrZero(request.resource.data.sharesCount);
+        return after == before + 1 && after >= 0;
+      }
+
+      match /likes/{userId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+        allow update: if false;
+      }
+
+      match /saves/{userId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+        allow update: if false;
+      }
+    }
+
+    match /RecipeReports/{reportId} {
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly([
+          'reporterId',
+          'targetType',
+          'targetId',
+          'title',
+          'reason',
+          'createdAt'
+        ])
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

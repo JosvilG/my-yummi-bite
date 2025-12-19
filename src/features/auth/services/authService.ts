@@ -98,8 +98,10 @@ export const createUserDocument = async (
       id: user.uid,
       username,
       name: fullName,
-      email: user.email,
       createdAt: serverTimestamp(),
+      followersCount: 0,
+      followingCount: 0,
+      accountStatus: 'active',
     });
   }
 };

@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isJson() {
+      return request.resource.contentType.matches('application/json');
+    }
+
+    function under5Mb() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Traducciones descargables por la app (lectura pública).
+    match /translations/{filename} {
+      allow read: if true;
+      allow write: if isAdmin() && isJson() && request.resource.size < 256 * 1024;
+    }
+
+    // Avatares públicos; escritura solo del propio usuario.
+    match /public/users/{userId}/{filename} {
+      allow read: if true;
+      allow write: if isSelf(userId) && isImage() && under5Mb();
+    }
+
+    // Imágenes de recetas públicas; escritura solo del autor.
+    match /public/recipes/{authorId}/{filename} {
+      allow read: if true;
+      allow write: if isSelf(authorId) && isImage() && under5Mb();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

@@ -8,9 +8,10 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
-*.env
-*.env.*
-pnpm-lock.yaml
 
+# Env (no commitear secretos; mantener plantilla)
+.env
+.env.*
+AGENTS.md
 # macOS
 .DS_Store

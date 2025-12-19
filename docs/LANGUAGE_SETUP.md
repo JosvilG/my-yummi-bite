@@ -84,21 +84,30 @@ uploadTranslations().catch(console.error);
 
 ## Storage Rules
 
-Make sure your Firebase Storage rules allow reading the translations:
+Make sure your Firebase Storage rules allow reading the translations **and** keep everything else locked down (deny by default):
 
 ```javascript
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public read access to translations
     match /translations/{filename} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.token.admin == true;
     }
     
-    // Other rules...
+    // Public assets written by authenticated users
+    match /public/users/{userId}/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /public/recipes/{authorId}/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == authorId;
+    }
+
+    // Deny by default
     match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

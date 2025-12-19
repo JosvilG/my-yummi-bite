@@ -41,8 +41,8 @@ export const fetchRandomRecipes = async (
   mealType?: string | null
 ): Promise<{ success: boolean; recipes?: RecipeSummary[]; error?: string }> => {
   if (FeatureFlags.USE_MOCK_RECIPES) {
-    log.debug('Using mock recipes', { count: numberOfRecipes, cuisineFilters });
-    const mockRecipes = getMockRecipes(numberOfRecipes, cuisineFilters);
+    log.debug('Using mock recipes', { count: numberOfRecipes, cuisineFilters, mealType });
+    const mockRecipes = getMockRecipes(numberOfRecipes, cuisineFilters, mealType);
     return { success: true, recipes: mockRecipes };
   }
 
@@ -55,7 +55,11 @@ export const fetchRandomRecipes = async (
     }
 
     if (mealType) {
-      url += `&type=${mealType.toLowerCase()}`;
+      if (mealType.toLowerCase() === 'vegetarian') {
+        url += `&diet=vegetarian`;
+      } else {
+        url += `&type=${mealType.toLowerCase()}`;
+      }
     }
 
     const response = await fetch(url);

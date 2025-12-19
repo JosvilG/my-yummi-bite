@@ -12,7 +12,7 @@ import {
   where,
   limit,
 } from 'firebase/firestore';
-import { db } from '@/app/config/firebase';
+import { db, serverTimestamp } from '@/app/config/firebase';
 import { captureException } from '@/lib/sentry';
 import { log } from '@/lib/logger';
 
@@ -88,11 +88,11 @@ export const saveFavoriteRecipe = async (
     await setDoc(
       recipeRef,
       {
-      id: recipeId,
-      url: imageUrl,
-      savedAt: new Date(),
-      source: 'spoonacular',
-      ...(cuisines && cuisines.length > 0 && { cuisines }),
+        id: recipeId,
+        url: imageUrl,
+        savedAt: serverTimestamp(),
+        source: 'spoonacular',
+        ...(cuisines && cuisines.length > 0 && { cuisines }),
       },
       { merge: true }
     );
@@ -124,7 +124,7 @@ export const saveCustomFavoriteRecipe = async (
       {
         id: recipeId,
         url: customRecipe.imageUrl,
-        savedAt: new Date(),
+        savedAt: serverTimestamp(),
         source: 'custom',
         title: customRecipe.title,
         ingredients: customRecipe.ingredients,
@@ -161,7 +161,7 @@ export const savePublishedFavoriteRecipe = async (
       {
         id: Date.now(),
         url: publishedRecipe.imageUrl,
-        savedAt: new Date(),
+        savedAt: serverTimestamp(),
         source: 'published',
         publishedId: publishedRecipe.publishedId,
         title: publishedRecipe.title,
@@ -218,7 +218,7 @@ export const togglePublishedFavoriteRecipe = async (
       {
         id: Date.now(),
         url: publishedRecipe.imageUrl,
-        savedAt: new Date(),
+        savedAt: serverTimestamp(),
         source: 'published',
         publishedId: publishedRecipe.publishedId,
         title: publishedRecipe.title,
