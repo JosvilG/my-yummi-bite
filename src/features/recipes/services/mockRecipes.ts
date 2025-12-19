@@ -1,6 +1,6 @@
 import type { RecipeSummary } from './spoonacularService';
 
-export const MOCK_RECIPES: RecipeSummary[] = [
+export const MOCK_RECIPES: RecipeSummary[] = [ /*
   {
     id: 716429,
     title: 'Pasta with Garlic, Scallions, Cauliflower & Breadcrumbs',
@@ -1707,7 +1707,7 @@ export const MOCK_RECIPES: RecipeSummary[] = [
         ],
       },
     ],
-  },
+  }, */
 ];
 
 export const getMockRecipes = (

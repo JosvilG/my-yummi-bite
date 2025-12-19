@@ -2,6 +2,7 @@ import type { FirebaseApp } from 'firebase/app';
 import type { Auth, User } from 'firebase/auth';
 import { getFirestore, serverTimestamp, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -59,6 +60,7 @@ const auth: Auth = Platform.OS === 'web' ? firebaseAuthModule.getAuth(app) : cre
 
 const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
+const functions = getFunctions(app);
 
-export { app, auth, db, storage, serverTimestamp };
+export { app, auth, db, storage, serverTimestamp, functions };
 export type { Auth, User };

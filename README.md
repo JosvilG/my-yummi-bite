@@ -56,9 +56,9 @@ Una aplicación móvil moderna para descubrir recetas aleatorias, guardar tus fa
    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tu_storage_bucket
    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu_sender_id
    EXPO_PUBLIC_FIREBASE_APP_ID=tu_app_id
-   EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=tu_measurement_id
-   
-   EXPO_PUBLIC_SPOONACULAR_API_KEY=tu_spoonacular_api_key
+    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=tu_measurement_id
+
+    EXPO_PUBLIC_FUNCTIONS_BASE_URL=https://us-central1-tu-proyecto.cloudfunctions.net
    ```
 
 4. **Iniciar el proyecto**
@@ -83,6 +83,7 @@ Una aplicación móvil moderna para descubrir recetas aleatorias, guardar tus fa
 - **Navegación**: React Navigation v6
 - **Estado**: MobX + Context API
 - **Backend**: Firebase (Auth, Firestore, Storage)
+- **Social backend**: los flujos de publicación, like, save, share y eliminación se ejecutan a través de Firebase Functions (`publishRecipe`, `setPublishedRecipeLike`, `setPublishedRecipeSave`, `incrementPublishedRecipeShare`, `deletePublishedRecipe`), lo que mantiene las escrituras en Firestore en servidor y permite validar el contexto del usuario.
 - **API**: Spoonacular
 - **Estilos**: StyleSheet nativo
 
@@ -158,7 +159,8 @@ users/
 
 1. Regístrate en [Spoonacular](https://spoonacular.com/food-api)
 2. Obtén tu API Key
-3. Añádela a `.env` como `EXPO_PUBLIC_SPOONACULAR_API_KEY`
+3. Guarda la clave en el entorno de funciones (p. ej. `firebase functions:config:set spoonacular.key=TU_API_KEY`) y vuelve a desplegar `firebase deploy --only functions`.
+4. Define la URL pública de las funciones en `.env` usando `EXPO_PUBLIC_FUNCTIONS_BASE_URL=https://us-central1-TU_PROYECTO.cloudfunctions.net` para que el cliente use el proxy seguro.
 
 ### Límites de la API
 

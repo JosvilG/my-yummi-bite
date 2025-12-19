@@ -331,6 +331,9 @@ const HomeScreen: React.FC = observer(() => {
       count: PAGE_SIZE,
       filters: recipeStore.filters.length,
       mealType: recipeStore.mealType ?? null,
+      followedExhausted: followedExhaustedRef.current,
+      communityExhausted: communityExhaustedRef.current,
+      spoonExhausted: spoonExhaustedRef.current,
     });
     const result = await fetchRandomRecipes(recipeStore.filters, PAGE_SIZE, recipeStore.mealType);
     if (!result.success) {
@@ -353,10 +356,17 @@ const HomeScreen: React.FC = observer(() => {
   // NUEVO: Función para refrescar el buffer en background
   const refreshBufferInBackground = useCallback(async () => {
     if (isRefreshingBufferRef.current) return;
-    if (user?.uid && !favoritesHydrated) return;
+    if (user?.uid && !favoritesHydrated) {
+      log.debug('HomeScreen: skip buffer refresh until favorites hydrated');
+      return;
+    }
 
     isRefreshingBufferRef.current = true;
-    log.debug('HomeScreen: refreshing buffer in background');
+    log.debug('HomeScreen: refreshing buffer in background', {
+      followedExhausted: followedExhaustedRef.current,
+      communityExhausted: communityExhaustedRef.current,
+      spoonExhausted: spoonExhaustedRef.current,
+    });
 
     try {
       const newCards: HomeCard[] = [];

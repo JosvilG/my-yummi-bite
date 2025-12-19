@@ -1,24 +1,19 @@
 import {
-  addDoc,
   collection,
-  deleteDoc,
   doc,
   type DocumentData,
   getDoc,
   getDocs,
-  increment,
   limit,
   onSnapshot,
   orderBy,
   query,
   type QueryDocumentSnapshot,
-  runTransaction,
-  setDoc,
   startAfter,
-  updateDoc,
   where,
 } from 'firebase/firestore';
-import { db, serverTimestamp, storage } from '@/app/config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions, storage } from '@/app/config/firebase';
 import { captureException } from '@/lib/sentry';
 import { log } from '@/lib/logger';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -64,6 +59,59 @@ export const uploadPublishedRecipeImage = async (
   }
 };
 
+type PublishRecipeCallableInput = {
+  title: string;
+  imageUrl: string;
+  ingredients: string[];
+  steps: string[];
+  readyInMinutes?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  nutrition?: {
+    calories?: string;
+    protein?: string;
+    fat?: string;
+    carbs?: string;
+  };
+};
+
+type PublishRecipeCallableOutput = {
+  id: string;
+  imageUrl?: string;
+};
+
+type PublishedRecipeActionCallableInput = {
+  publishedRecipeId: string;
+  active?: boolean;
+};
+
+const publishRecipeCallable = httpsCallable<
+  PublishRecipeCallableInput,
+  PublishRecipeCallableOutput
+>(functions, 'publishRecipe');
+const setPublishedRecipeLikeCallable = httpsCallable<
+  PublishedRecipeActionCallableInput,
+  { success: true }
+>(functions, 'setPublishedRecipeLike');
+const setPublishedRecipeSaveCallable = httpsCallable<
+  PublishedRecipeActionCallableInput,
+  { success: true }
+>(functions, 'setPublishedRecipeSave');
+const incrementPublishedRecipeShareCallable = httpsCallable<
+  PublishedRecipeActionCallableInput,
+  { success: true }
+>(functions, 'incrementPublishedRecipeShare');
+const deletePublishedRecipeCallable = httpsCallable<
+  PublishedRecipeActionCallableInput,
+  { success: true }
+>(functions, 'deletePublishedRecipe');
+
+const extractCallableErrorMessage = (error: unknown, fallback = 'Unknown error'): string => {
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  return fallback;
+};
+
 export const publishRecipe = async (
   recipe: PublishedRecipeInput
 ): Promise<{ success: boolean; id?: string; imageUrl?: string; error?: string }> => {
@@ -79,26 +127,22 @@ export const publishRecipe = async (
       imageUrl = upload.url;
     }
 
-    const ref = collection(db, 'PublishedRecipes');
-    const docRef = await addDoc(ref, {
-      authorId: recipe.authorId,
+    const payload: PublishRecipeCallableInput = {
       title: recipe.title,
       imageUrl,
       ingredients: recipe.ingredients,
       steps: recipe.steps,
-      ...(typeof recipe.readyInMinutes === 'number' && { readyInMinutes: recipe.readyInMinutes }),
-      ...(recipe.difficulty && { difficulty: recipe.difficulty }),
-      ...(recipe.nutrition && { nutrition: recipe.nutrition }),
-      likesCount: 0,
-      savesCount: 0,
-      sharesCount: 0,
-      createdAt: serverTimestamp(),
-    });
-    return { success: true, id: docRef.id, imageUrl };
+      readyInMinutes: recipe.readyInMinutes,
+      difficulty: recipe.difficulty,
+      nutrition: recipe.nutrition,
+    };
+
+    const result = await publishRecipeCallable(payload);
+    return { success: true, id: result.data.id, imageUrl: result.data.imageUrl ?? imageUrl };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    captureException(error as Error, { operation: 'publishRecipe', authorId: recipe.authorId });
-    return { success: false, error: errorMessage };
+    const message = extractCallableErrorMessage(error, 'Could not publish recipe');
+    captureException(error as Error, { operation: 'publishRecipe' });
+    return { success: false, error: message };
   }
 };
 
@@ -387,26 +431,10 @@ export const setPublishedRecipeLike = async (
   like: boolean
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const recipeRef = doc(db, 'PublishedRecipes', publishedRecipeId);
-    const likeRef = doc(db, 'PublishedRecipes', publishedRecipeId, 'likes', userId);
-
-    await runTransaction(db, async (tx) => {
-      const likeSnap = await tx.get(likeRef);
-
-      if (like) {
-        if (likeSnap.exists()) return;
-        tx.set(likeRef, { createdAt: serverTimestamp() });
-        tx.update(recipeRef, { likesCount: increment(1) });
-        return;
-      }
-
-      if (!likeSnap.exists()) return;
-      tx.delete(likeRef);
-      tx.update(recipeRef, { likesCount: increment(-1) });
-    });
+    await setPublishedRecipeLikeCallable({ publishedRecipeId, active: like });
     return { success: true };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = extractCallableErrorMessage(error, 'Could not update like status');
     captureException(error as Error, { operation: 'setPublishedRecipeLike', userId, publishedRecipeId });
     return { success: false, error: errorMessage };
   }
@@ -433,26 +461,10 @@ export const setPublishedRecipeSave = async (
   save: boolean
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const recipeRef = doc(db, 'PublishedRecipes', publishedRecipeId);
-    const saveRef = doc(db, 'PublishedRecipes', publishedRecipeId, 'saves', userId);
-
-    await runTransaction(db, async (tx) => {
-      const saveSnap = await tx.get(saveRef);
-
-      if (save) {
-        if (saveSnap.exists()) return;
-        tx.set(saveRef, { createdAt: serverTimestamp() });
-        tx.update(recipeRef, { savesCount: increment(1) });
-        return;
-      }
-
-      if (!saveSnap.exists()) return;
-      tx.delete(saveRef);
-      tx.update(recipeRef, { savesCount: increment(-1) });
-    });
+    await setPublishedRecipeSaveCallable({ publishedRecipeId, active: save });
     return { success: true };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = extractCallableErrorMessage(error, 'Could not update save status');
     captureException(error as Error, { operation: 'setPublishedRecipeSave', userId, publishedRecipeId });
     return { success: false, error: errorMessage };
   }
@@ -462,11 +474,10 @@ export const incrementPublishedRecipeShare = async (
   publishedRecipeId: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const recipeRef = doc(db, 'PublishedRecipes', publishedRecipeId);
-    await updateDoc(recipeRef, { sharesCount: increment(1) });
+    await incrementPublishedRecipeShareCallable({ publishedRecipeId });
     return { success: true };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = extractCallableErrorMessage(error, 'Could not increment share count');
     captureException(error as Error, { operation: 'incrementPublishedRecipeShare', publishedRecipeId });
     return { success: false, error: errorMessage };
   }
@@ -476,10 +487,10 @@ export const deletePublishedRecipe = async (
   publishedRecipeId: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    await deleteDoc(doc(db, 'PublishedRecipes', publishedRecipeId));
+    await deletePublishedRecipeCallable({ publishedRecipeId });
     return { success: true };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = extractCallableErrorMessage(error, 'Could not delete recipe');
     captureException(error as Error, { operation: 'deletePublishedRecipe', publishedRecipeId });
     return { success: false, error: errorMessage };
   }

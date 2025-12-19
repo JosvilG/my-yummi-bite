@@ -1,5 +1,8 @@
+const appEnv = (process.env.EXPO_PUBLIC_APP_ENV ?? "development").toLowerCase();
+const useMocks = appEnv === "production" || appEnv === "preprod" ? false : __DEV__;
+
 export const FeatureFlags = {
-  USE_MOCK_RECIPES: __DEV__,
+  USE_MOCK_RECIPES: useMocks,
   ENABLE_DEBUG_LOGS: __DEV__,
   SHOW_DEV_TOOLS: __DEV__,
   SKIP_AUTH: false,
@@ -26,7 +29,7 @@ export const getFeatureFlagValue = <K extends FeatureFlagKey>(
 
 export const logFeatureFlags = (): void => {
   if (__DEV__) {
-    console.log('íº© Feature Flags:', FeatureFlags);
+    console.log('Feature Flags:', FeatureFlags);
   }
 };
 

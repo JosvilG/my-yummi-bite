@@ -22,45 +22,59 @@ service cloud.firestore {
       // Perfiles visibles solo para usuarios autenticados (evitar exponer datos a anónimos).
       allow read: if isSignedIn();
 
-      allow create: if isSelf(userId) && request.resource.data.id == userId;
+      allow create: if isSelf(userId)
+        && request.resource.data.id == userId
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'username',
+          'name',
+          'createdAt',
+          'followersCount',
+          'followingCount',
+          'accountStatus'
+        ])
+        && request.resource.data.createdAt == request.time
+        && intOrZero(request.resource.data.followersCount) == 0
+        && intOrZero(request.resource.data.followingCount) == 0
+        && request.resource.data.accountStatus == 'active';
 
       // Update del propio perfil + caso especial: incremento/decremento de followersCount por el follower.
       allow update: if (isSelf(userId) && isValidSelfUserUpdate())
         || (!isSelf(userId) && isValidFollowerCountUpdate(userId));
 
-      allow delete: if false;
+      allow delete: if isSelf(userId);
 
       function isValidSelfUserUpdate() {
-        let changed = request.resource.data.diff(resource.data).changedKeys();
-        return changed.hasOnly([
-          'username',
-          'name',
-          'bio',
-          'photoUrl',
-          'updatedAt',
-          'accountStatus',
-          'pausedAt',
-          'followersCount',
-          'followingCount'
-        ]) && request.resource.data.id == resource.data.id;
+        return request.resource.data.id == resource.data.id
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'username',
+            'name',
+            'bio',
+            'photoUrl',
+            'updatedAt',
+            'accountStatus',
+            'pausedAt',
+            'followersCount',
+            'followingCount'
+          ]);
       }
 
       function isValidFollowerCountUpdate(targetUserId) {
-        if (!isSignedIn()) return false;
-
-        let changed = request.resource.data.diff(resource.data).changedKeys();
-        if (!changed.hasOnly(['followersCount', 'updatedAt'])) return false;
-
-        let before = intOrZero(resource.data.followersCount);
-        let after = intOrZero(request.resource.data.followersCount);
-
-        let followerPath =
-          /databases/$(database)/documents/users/$(targetUserId)/followers/$(request.auth.uid);
-
-        return request.resource.data.id == resource.data.id && (
-          (after == before + 1 && !exists(followerPath) && existsAfter(followerPath)) ||
-          (after == before - 1 && exists(followerPath) && !existsAfter(followerPath))
-        );
+        return isSignedIn()
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['followersCount', 'updatedAt'])
+          && (
+            (
+              intOrZero(request.resource.data.followersCount) == intOrZero(resource.data.followersCount) + 1
+              && !exists(/databases/$(database)/documents/users/$(targetUserId)/followers/$(request.auth.uid))
+              && existsAfter(/databases/$(database)/documents/users/$(targetUserId)/followers/$(request.auth.uid))
+            )
+            || (
+              intOrZero(request.resource.data.followersCount) == intOrZero(resource.data.followersCount) - 1
+              && exists(/databases/$(database)/documents/users/$(targetUserId)/followers/$(request.auth.uid))
+              && !existsAfter(/databases/$(database)/documents/users/$(targetUserId)/followers/$(request.auth.uid))
+            )
+          );
       }
 
       match /FavRecipes/{docId} {
@@ -135,33 +149,29 @@ service cloud.firestore {
       }
 
       function isValidPublishedAuthorUpdate() {
-        if (resource.data.authorId != request.auth.uid) return false;
-        let changed = request.resource.data.diff(resource.data).changedKeys();
-
         // El autor puede editar contenido, no contadores.
-        return changed.hasOnly([
-          'title',
-          'imageUrl',
-          'ingredients',
-          'steps',
-          'readyInMinutes',
-          'difficulty',
-          'nutrition',
-          'updatedAt'
-        ])
-        && request.resource.data.authorId == resource.data.authorId
-        && request.resource.data.likesCount == resource.data.likesCount
-        && request.resource.data.savesCount == resource.data.savesCount
-        && request.resource.data.sharesCount == resource.data.sharesCount
-        && request.resource.data.createdAt == resource.data.createdAt;
+        return resource.data.authorId == request.auth.uid
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'title',
+            'imageUrl',
+            'ingredients',
+            'steps',
+            'readyInMinutes',
+            'difficulty',
+            'nutrition',
+            'updatedAt'
+          ])
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.likesCount == resource.data.likesCount
+          && request.resource.data.savesCount == resource.data.savesCount
+          && request.resource.data.sharesCount == resource.data.sharesCount
+          && request.resource.data.createdAt == resource.data.createdAt;
       }
 
       function isValidPublishedAnonymizeUpdate() {
         // Caso: borrar cuenta manteniendo recetas (accountService) => authorId -> 'anonymous'
-        if (resource.data.authorId != request.auth.uid) return false;
-        let changed = request.resource.data.diff(resource.data).changedKeys();
-
-        return changed.hasOnly(['authorId', 'authorDeletedAt', 'updatedAt'])
+        return resource.data.authorId == request.auth.uid
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['authorId', 'authorDeletedAt', 'updatedAt'])
           && request.resource.data.authorId == 'anonymous'
           && request.resource.data.authorDeletedAt == request.time
           && request.resource.data.createdAt == resource.data.createdAt
@@ -171,46 +181,43 @@ service cloud.firestore {
       }
 
       function isValidPublishedLikeCountUpdate(targetRecipeId) {
-        let changed = request.resource.data.diff(resource.data).changedKeys();
-        if (!changed.hasOnly(['likesCount'])) return false;
-
-        let before = intOrZero(resource.data.likesCount);
-        let after = intOrZero(request.resource.data.likesCount);
-        if (after < 0) return false;
-
-        let likePath =
-          /databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/likes/$(request.auth.uid);
-
-        return (
-          (after == before + 1 && !exists(likePath) && existsAfter(likePath)) ||
-          (after == before - 1 && exists(likePath) && !existsAfter(likePath))
-        );
+        return request.resource.data.diff(resource.data).changedKeys().hasOnly(['likesCount'])
+          && intOrZero(request.resource.data.likesCount) >= 0
+          && (
+            (
+              intOrZero(request.resource.data.likesCount) == intOrZero(resource.data.likesCount) + 1
+              && !exists(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/likes/$(request.auth.uid))
+              && existsAfter(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/likes/$(request.auth.uid))
+            )
+            || (
+              intOrZero(request.resource.data.likesCount) == intOrZero(resource.data.likesCount) - 1
+              && exists(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/likes/$(request.auth.uid))
+              && !existsAfter(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/likes/$(request.auth.uid))
+            )
+          );
       }
 
       function isValidPublishedSaveCountUpdate(targetRecipeId) {
-        let changed = request.resource.data.diff(resource.data).changedKeys();
-        if (!changed.hasOnly(['savesCount'])) return false;
-
-        let before = intOrZero(resource.data.savesCount);
-        let after = intOrZero(request.resource.data.savesCount);
-        if (after < 0) return false;
-
-        let savePath =
-          /databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/saves/$(request.auth.uid);
-
-        return (
-          (after == before + 1 && !exists(savePath) && existsAfter(savePath)) ||
-          (after == before - 1 && exists(savePath) && !existsAfter(savePath))
-        );
+        return request.resource.data.diff(resource.data).changedKeys().hasOnly(['savesCount'])
+          && intOrZero(request.resource.data.savesCount) >= 0
+          && (
+            (
+              intOrZero(request.resource.data.savesCount) == intOrZero(resource.data.savesCount) + 1
+              && !exists(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/saves/$(request.auth.uid))
+              && existsAfter(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/saves/$(request.auth.uid))
+            )
+            || (
+              intOrZero(request.resource.data.savesCount) == intOrZero(resource.data.savesCount) - 1
+              && exists(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/saves/$(request.auth.uid))
+              && !existsAfter(/databases/$(database)/documents/PublishedRecipes/$(targetRecipeId)/saves/$(request.auth.uid))
+            )
+          );
       }
 
       function isValidPublishedShareCountUpdate() {
-        let changed = request.resource.data.diff(resource.data).changedKeys();
-        if (!changed.hasOnly(['sharesCount'])) return false;
-
-        let before = intOrZero(resource.data.sharesCount);
-        let after = intOrZero(request.resource.data.sharesCount);
-        return after == before + 1 && after >= 0;
+        return request.resource.data.diff(resource.data).changedKeys().hasOnly(['sharesCount'])
+          && intOrZero(request.resource.data.sharesCount) == intOrZero(resource.data.sharesCount) + 1
+          && intOrZero(request.resource.data.sharesCount) >= 0;
       }
 
       match /likes/{userId} {
@@ -256,4 +263,3 @@ service cloud.firestore {
     }
   }
 }
-

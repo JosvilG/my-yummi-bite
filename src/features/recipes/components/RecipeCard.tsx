@@ -93,6 +93,17 @@ const RecipeCard: React.FC<Props> = ({ recipe, onSkip, onSave, onTogglePublished
       <View style={[styles.card, { backgroundColor: colors.background }]}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: imageSource }} style={styles.recipeImage} />
+          {!isPublishedRecipe(recipe) && (
+            <View
+              style={[
+                styles.sourceBadge,
+                { backgroundColor: colors.background, borderColor: colors.border },
+              ]}
+            >
+              <MaterialCommunityIcons name="silverware-fork-knife" size={14} color={colors.text} />
+              <Text style={[styles.sourceText, { color: colors.textLight }]}>Spoonacular</Text>
+            </View>
+          )}
           <Pressable
             onPress={() => onReportPress?.(recipe)}
             style={[styles.reportBadge, { backgroundColor: colors.background, borderColor: colors.border }]}
@@ -222,6 +233,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+  },
+  sourceBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sourceText: {
+    fontFamily: FONTS.medium,
+    fontSize: 12,
   },
   infoContainer: {
     paddingHorizontal: 20,
